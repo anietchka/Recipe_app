@@ -6,6 +6,18 @@ class Recipe < ApplicationRecord
 
   validates :title, presence: true
 
+  # Returns recipe ingredients that are missing or insufficient in the user's pantry
+  # Returns an array of hashes with:
+  #   - ingredient_id: the ingredient ID
+  #   - recipe_ingredient: the RecipeIngredient object
+  #   - missing_quantity: the missing quantity (float)
+  #   - missing_fraction: the missing fraction (string or nil)
+  def missing_ingredients_for(user)
+    recipe_ingredients.includes(:ingredient).filter_map do |recipe_ingredient|
+      calculate_missing_for_ingredient(recipe_ingredient, user)
+    end
+  end
+
   # Decrements pantry items for the given user based on recipe ingredients
   # - Uses recipe_ingredient.quantity if present, otherwise decrements by 1.0
   # - Handles fractions in both recipe_ingredient and pantry_item
@@ -20,19 +32,9 @@ class Recipe < ApplicationRecord
 
       next unless pantry_item
 
-      quantity_to_decrement = if recipe_ingredient.quantity.nil? && recipe_ingredient.fraction.blank?
-                                 1.0
-      else
-                                 calculate_total_quantity(
-                                   recipe_ingredient.quantity,
-                                   recipe_ingredient.fraction
-                                 )
-      end
+      quantity_to_decrement = recipe_ingredient.required_quantity
 
-      current_quantity = calculate_total_quantity(
-        pantry_item.quantity,
-        pantry_item.fraction
-      )
+      current_quantity = pantry_item.available_quantity
 
       new_quantity_total = [ current_quantity - quantity_to_decrement, 0.0 ].max
 
@@ -44,32 +46,31 @@ class Recipe < ApplicationRecord
 
   private
 
-  # Calculates total quantity from quantity and fraction
-  # Converts fraction to decimal and adds to quantity
-  def calculate_total_quantity(quantity, fraction)
-    total = quantity.to_f
+  def calculate_missing_for_ingredient(recipe_ingredient, user)
+    pantry_item = PantryItem.find_by(user: user, ingredient: recipe_ingredient.ingredient)
+    required_quantity = recipe_ingredient.required_quantity
 
-    return total if fraction.blank?
-
-    fraction_value = parse_fraction(fraction)
-    total += fraction_value if fraction_value
-
-    total
+    if pantry_item.nil?
+      build_missing_hash(recipe_ingredient, required_quantity)
+    elsif insufficient_quantity?(pantry_item, required_quantity)
+      missing_total = required_quantity - pantry_item.available_quantity
+      build_missing_hash(recipe_ingredient, missing_total)
+    end
   end
 
-  # Parses a fraction string (e.g., "1/2", "3/4") and returns decimal value
-  def parse_fraction(fraction_string)
-    return nil if fraction_string.blank?
+  def insufficient_quantity?(pantry_item, required_quantity)
+    pantry_item.available_quantity < required_quantity
+  end
 
-    parts = fraction_string.split("/")
-    return nil unless parts.length == 2
+  def build_missing_hash(recipe_ingredient, missing_total)
+    missing_quantity, missing_fraction = convert_to_quantity_and_fraction(missing_total)
 
-    numerator = parts[0].to_f
-    denominator = parts[1].to_f
-
-    return nil if denominator.zero?
-
-    numerator / denominator
+    {
+      ingredient_id: recipe_ingredient.ingredient_id,
+      recipe_ingredient: recipe_ingredient,
+      missing_quantity: missing_quantity,
+      missing_fraction: missing_fraction
+    }
   end
 
   # Converts a decimal to quantity and fraction
