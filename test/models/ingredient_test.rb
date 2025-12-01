@@ -25,7 +25,15 @@ class IngredientTest < ActiveSupport::TestCase
 
   test "canonicalize handles complex examples" do
     assert_equal "yellow onions finely chopped", Ingredient.canonicalize("2 Yellow Onions, finely chopped!")
-    assert_equal "fresh basil leaves g", Ingredient.canonicalize("Fresh Basil Leaves (10g)")
+    assert_equal "fresh basil leaves", Ingredient.canonicalize("Fresh Basil Leaves (10g)")
+  end
+
+  test "canonicalize removes measurement units" do
+    assert_equal "pasta", Ingredient.canonicalize("200g pasta")
+    assert_equal "milk", Ingredient.canonicalize("500ml milk")
+    assert_equal "flour", Ingredient.canonicalize("1 kg flour")
+    assert_equal "eggs", Ingredient.canonicalize("2 eggs")
+    assert_equal "parmesan cheese", Ingredient.canonicalize("100g parmesan cheese")
   end
 
   # Tests for model validations
