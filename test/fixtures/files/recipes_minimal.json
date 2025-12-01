@@ -1,0 +1,43 @@
+[
+  {
+    "title": "Simple Pasta",
+    "description": "A simple pasta recipe",
+    "instructions": "1. Boil water\n2. Cook pasta\n3. Serve",
+    "total_time_minutes": 15,
+    "image_url": "https://example.com/pasta.jpg",
+    "source_url": "https://example.com/recipe1",
+    "rating": 4.5,
+    "ratings_count": 100,
+    "ingredients": [
+      "200g pasta",
+      "2 eggs",
+      "100 g parmesan cheese",
+      "1.5 cups flour"
+    ]
+  },
+  {
+    "title": "Tomato Salad",
+    "description": "Fresh tomato salad",
+    "instructions": "1. Cut tomatoes\n2. Add salt\n3. Serve",
+    "total_time_minutes": 10,
+    "image_url": null,
+    "source_url": null,
+    "rating": 4.0,
+    "ratings_count": 50,
+    "ingredients": [
+      "3 tomatoes",
+      "fresh basil",
+      "olive oil"
+    ]
+  },
+  {
+    "title": "Test Recipe",
+    "ingredients": [
+      "½ cup water",
+      "1 ½ cups flour",
+      "⅓ teaspoon salt",
+      "2 ⅔ tablespoons oil"
+    ]
+  }
+]
+
