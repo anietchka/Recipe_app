@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_01_181442) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_01_204958) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -20,6 +20,19 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_01_181442) do
     t.string "name"
     t.datetime "updated_at", null: false
     t.index ["canonical_name"], name: "index_ingredients_on_canonical_name", unique: true
+  end
+
+  create_table "pantry_items", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "fraction"
+    t.bigint "ingredient_id", null: false
+    t.float "quantity"
+    t.string "unit"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["ingredient_id"], name: "index_pantry_items_on_ingredient_id"
+    t.index ["user_id", "ingredient_id"], name: "index_pantry_items_on_user_id_and_ingredient_id", unique: true
+    t.index ["user_id"], name: "index_pantry_items_on_user_id"
   end
 
   create_table "recipe_ingredients", force: :cascade do |t|
@@ -55,6 +68,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_01_181442) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "pantry_items", "ingredients"
+  add_foreign_key "pantry_items", "users"
   add_foreign_key "recipe_ingredients", "ingredients"
   add_foreign_key "recipe_ingredients", "recipes"
 end

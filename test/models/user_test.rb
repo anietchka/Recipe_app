@@ -23,4 +23,28 @@ class UserTest < ActiveSupport::TestCase
     user = User.create!(email: "demo@example.com")
     assert_respond_to user, :pantry_items
   end
+
+  test "should only access own pantry items" do
+    user1 = User.create!(email: "user1@example.com")
+    user2 = User.create!(email: "user2@example.com")
+    ingredient = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    pantry_item1 = PantryItem.create!(
+      user: user1,
+      ingredient: ingredient,
+      quantity: 500.0
+    )
+
+    pantry_item2 = PantryItem.create!(
+      user: user2,
+      ingredient: ingredient,
+      quantity: 300.0
+    )
+
+    assert_includes user1.pantry_items, pantry_item1
+    assert_not_includes user1.pantry_items, pantry_item2
+
+    assert_includes user2.pantry_items, pantry_item2
+    assert_not_includes user2.pantry_items, pantry_item1
+  end
 end
