@@ -7,6 +7,10 @@ class Ingredient < ApplicationRecord
     piece pieces pcs
   ].freeze
 
+  # Pre-compiled regex pattern string for measurement units to avoid ReDoS warnings
+  # This pattern is used in both canonicalize and recipe import parsing
+  UNITS_PATTERN_STRING = MEASUREMENT_UNITS.join("|").freeze
+
   has_many :recipe_ingredients, dependent: :destroy
   has_many :recipes, through: :recipe_ingredients
   has_many :pantry_items, dependent: :destroy
@@ -22,10 +26,9 @@ class Ingredient < ApplicationRecord
   def self.canonicalize(string)
     return nil if string.nil?
 
-    units_pattern = MEASUREMENT_UNITS.join("|")
     string.to_s
           .downcase
-          .gsub(/\d+\.?\d*\s*(#{units_pattern})\b/i, " ") # Remove numbers with units
+          .gsub(/\d+\.?\d*\s*(#{UNITS_PATTERN_STRING})\b/i, " ") # Remove numbers with units
           .gsub(/\d+/, " ")           # Remove remaining numbers
           .gsub(/[^a-z\s]/, " ")      # Replace non-alphabetic characters with space
           .gsub(/\s+/, " ")           # Compress multiple spaces to single space
