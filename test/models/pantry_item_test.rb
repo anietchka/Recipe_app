@@ -165,4 +165,61 @@ class PantryItemTest < ActiveSupport::TestCase
     @ingredient.destroy
     assert_nil PantryItem.find_by(id: pantry_item.id)
   end
+
+  test "available_quantity returns total quantity when quantity and fraction are present" do
+    pantry_item = PantryItem.create!(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: 1.0,
+      fraction: "1/2"
+    )
+
+    # 1 + 0.5 = 1.5
+    assert_equal 1.5, pantry_item.available_quantity
+  end
+
+  test "available_quantity returns quantity when no fraction" do
+    pantry_item = PantryItem.create!(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: 200.0,
+      fraction: nil
+    )
+
+    assert_equal 200.0, pantry_item.available_quantity
+  end
+
+  test "available_quantity returns fraction value when only fraction is present" do
+    pantry_item = PantryItem.create!(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: nil,
+      fraction: "1/2"
+    )
+
+    assert_equal 0.5, pantry_item.available_quantity
+  end
+
+  test "available_quantity returns 0.0 when quantity is 0 and fraction is blank" do
+    pantry_item = PantryItem.create!(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: 0.0,
+      fraction: nil
+    )
+
+    assert_equal 0.0, pantry_item.available_quantity
+  end
+
+  test "available_quantity handles complex fractions" do
+    pantry_item = PantryItem.create!(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: 2.0,
+      fraction: "3/4"
+    )
+
+    # 2 + 0.75 = 2.75
+    assert_equal 2.75, pantry_item.available_quantity
+  end
 end

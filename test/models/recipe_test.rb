@@ -273,4 +273,149 @@ class RecipeTest < ActiveSupport::TestCase
     # 2/3 - 1 1/3 = 0.666... - 1.333... = -0.666... -> 0 (ne peut pas être négatif)
     assert_equal 0.0, oil_item.quantity
   end
+
+  test "missing_ingredients_for returns ingredients not in user pantry with full quantity" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+    eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+    cheese = Ingredient.create!(name: "Cheese", canonical_name: "cheese")
+
+    recipe = Recipe.create!(title: "Pasta Carbonara")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "200g pasta", quantity: 200.0)
+    RecipeIngredient.create!(recipe: recipe, ingredient: eggs, original_text: "2 eggs", quantity: 2.0)
+    RecipeIngredient.create!(recipe: recipe, ingredient: cheese, original_text: "100g cheese", quantity: 100.0)
+
+    # User has pasta and eggs in pantry, but not cheese
+    PantryItem.create!(user: user, ingredient: pasta, quantity: 500.0)
+    PantryItem.create!(user: user, ingredient: eggs, quantity: 5.0)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    cheese_missing = missing.find { |m| m[:ingredient_id] == cheese.id }
+    assert_not_nil cheese_missing
+    assert_equal 100.0, cheese_missing[:missing_quantity]
+    assert_nil cheese_missing[:missing_fraction]
+  end
+
+  test "missing_ingredients_for calculates missing quantity when insufficient in pantry" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    recipe = Recipe.create!(title: "Pasta Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "500g pasta", quantity: 500.0)
+
+    # User has only 200g of pasta, needs 500g
+    PantryItem.create!(user: user, ingredient: pasta, quantity: 200.0)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    pasta_missing = missing.find { |m| m[:ingredient_id] == pasta.id }
+    assert_not_nil pasta_missing
+    assert_equal 300.0, pasta_missing[:missing_quantity]
+    assert_nil pasta_missing[:missing_fraction]
+  end
+
+  test "missing_ingredients_for handles fractions correctly" do
+    user = User.create!(email: "demo@example.com")
+    flour = Ingredient.create!(name: "Flour", canonical_name: "flour")
+
+    recipe = Recipe.create!(title: "Cake")
+    RecipeIngredient.create!(
+      recipe: recipe,
+      ingredient: flour,
+      original_text: "1 ½ cups flour",
+      quantity: 1.0,
+      fraction: "1/2"
+    )
+
+    # User has only 1/2 cup of flour, needs 1 1/2 cups
+    PantryItem.create!(user: user, ingredient: flour, quantity: 0.0, fraction: "1/2")
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    flour_missing = missing.find { |m| m[:ingredient_id] == flour.id }
+    assert_not_nil flour_missing
+    assert_equal 1.0, flour_missing[:missing_quantity]
+    assert_nil flour_missing[:missing_fraction]
+  end
+
+  test "missing_ingredients_for handles complex fraction calculations" do
+    user = User.create!(email: "demo@example.com")
+    sugar = Ingredient.create!(name: "Sugar", canonical_name: "sugar")
+
+    recipe = Recipe.create!(title: "Dessert")
+    RecipeIngredient.create!(
+      recipe: recipe,
+      ingredient: sugar,
+      original_text: "2 ¾ cups sugar",
+      quantity: 2.0,
+      fraction: "3/4"
+    )
+
+    # User has 1 1/4 cups, needs 2 3/4 cups
+    PantryItem.create!(user: user, ingredient: sugar, quantity: 1.0, fraction: "1/4")
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    sugar_missing = missing.find { |m| m[:ingredient_id] == sugar.id }
+    assert_not_nil sugar_missing
+    # 2 3/4 - 1 1/4 = 1 1/2
+    assert_equal 1.0, sugar_missing[:missing_quantity]
+    assert_equal "1/2", sugar_missing[:missing_fraction]
+  end
+
+  test "missing_ingredients_for returns all ingredients when user has no pantry items" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+    eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+
+    recipe = Recipe.create!(title: "Pasta with Eggs")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "200g pasta", quantity: 200.0)
+    RecipeIngredient.create!(recipe: recipe, ingredient: eggs, original_text: "2 eggs", quantity: 2.0)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 2, missing.count
+    pasta_missing = missing.find { |m| m[:ingredient_id] == pasta.id }
+    eggs_missing = missing.find { |m| m[:ingredient_id] == eggs.id }
+    assert_not_nil pasta_missing
+    assert_not_nil eggs_missing
+    assert_equal 200.0, pasta_missing[:missing_quantity]
+    assert_equal 2.0, eggs_missing[:missing_quantity]
+  end
+
+  test "missing_ingredients_for returns empty array when user has sufficient quantities" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+    eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+
+    recipe = Recipe.create!(title: "Pasta with Eggs")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "200g pasta", quantity: 200.0)
+    RecipeIngredient.create!(recipe: recipe, ingredient: eggs, original_text: "2 eggs", quantity: 2.0)
+
+    PantryItem.create!(user: user, ingredient: pasta, quantity: 500.0)
+    PantryItem.create!(user: user, ingredient: eggs, quantity: 5.0)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 0, missing.count
+  end
+
+  test "missing_ingredients_for returns empty when user has more than needed" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    recipe = Recipe.create!(title: "Pasta Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "200g pasta", quantity: 200.0)
+
+    PantryItem.create!(user: user, ingredient: pasta, quantity: 500.0)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 0, missing.count
+  end
 end
