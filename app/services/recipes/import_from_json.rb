@@ -1,5 +1,6 @@
 module Recipes
   class ImportFromJson
+    include FractionConverter
     def self.call(file_path = nil)
       new(file_path).call
     end
@@ -117,19 +118,8 @@ module Recipes
       whole = decimal.to_i
       decimal_part = decimal - whole
 
-      fraction_map = {
-        0.5 => "1/2",
-        0.333 => "1/3",
-        0.667 => "2/3",
-        0.25 => "1/4",
-        0.75 => "3/4"
-      }
-
-      fraction_map.each do |target_decimal, fraction|
-        if (decimal_part - target_decimal).abs < 0.01
-          return { whole: whole, fraction: fraction }
-        end
-      end
+      fraction = super(decimal_part)
+      return { whole: whole, fraction: fraction } if fraction
 
       # If no common fraction matches, return nil to keep as decimal
       nil
