@@ -39,3 +39,6 @@
 
 # Cursor IDE configuration
 .cursorrules
+
+# Large data files
+db/data/recipes-en.json
