@@ -100,8 +100,10 @@ module Recipes
     end
 
     def match_ingredient_pattern(text)
-      units_pattern = Ingredient::MEASUREMENT_UNITS.join("|")
-      text.match(/^(\d+\.?\d*)?\s*(\d+\/\d+)?\s*(#{units_pattern})?/i)
+      # Use pre-compiled regex pattern string from Ingredient to avoid ReDoS warnings
+      units_pattern = Ingredient::UNITS_PATTERN_STRING
+      regex = /^(\d+\.?\d*)?\s*(\d+\/\d+)?\s*(#{units_pattern})?/i
+      text.match(regex)
     end
 
     def extract_matched_parts(match)
