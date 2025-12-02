@@ -28,7 +28,7 @@ class RecipesRakeTest < ActiveSupport::TestCase
     FileUtils.cp(temp_file.path, default_path)
 
     assert_difference -> { Recipe.count }, 3 do
-      assert_difference -> { Ingredient.count }, 11 do
+      assert_difference -> { Ingredient.count }, 10 do
         assert_difference -> { RecipeIngredient.count }, 11 do
           Rake::Task["recipes:import"].invoke
         end
@@ -43,7 +43,7 @@ class RecipesRakeTest < ActiveSupport::TestCase
     fixture_path = Rails.root.join("test", "fixtures", "files", "recipes_minimal.json")
 
     assert_difference -> { Recipe.count }, 3 do
-      assert_difference -> { Ingredient.count }, 11 do
+      assert_difference -> { Ingredient.count }, 10 do
         assert_difference -> { RecipeIngredient.count }, 11 do
           Rake::Task["recipes:import"].invoke(fixture_path.to_s)
         end
