@@ -40,8 +40,8 @@ en:
       quantity_placeholder: "e.g. 500"
       fraction: "Fraction"
       fraction_placeholder: "Select fraction..."
-      no_fraction: "None"
-      no_unit: "None"
+      no_fraction: "Fraction"
+      no_unit: "Unit"
       unit: "Unit"
       unit_placeholder: "Select unit..."
       add_button: "Add to Pantry"
@@ -57,6 +57,7 @@ en:
       decrement: "Decrease quantity"
       ingredient_required: "can't be blank"
       invalid_ingredient_name: "is invalid"
+      quantity_help: "You can leave quantity, fraction and unit empty for base ingredients (salt, oil, mustard...)."
     form:
       error: "error"
       errors: "errors"
@@ -73,10 +74,3 @@ en:
     decrement:
       success: "Quantity decreased successfully"
       error: "Failed to decrease quantity"
-  activerecord:
-    errors:
-      models:
-        pantry_item:
-          attributes:
-            base:
-              quantity_or_fraction_required: "must have either quantity or fraction"

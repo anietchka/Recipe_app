@@ -49,12 +49,35 @@ module PantryItems
     end
 
     def build_pantry_item(ingredient)
+      quantity = normalize_quantity(params[:quantity])
+      fraction = normalize_fraction(params[:fraction])
+      unit = normalize_unit(params[:unit])
+
+      # If no quantity and no fraction, ignore unit (set to nil)
+      unit = nil if quantity.nil? && fraction.blank?
+
       user.pantry_items.build(
         ingredient: ingredient,
-        quantity: params[:quantity],
-        fraction: params[:fraction],
-        unit: params[:unit]
+        quantity: quantity,
+        fraction: fraction,
+        unit: unit
       )
+    end
+
+    # Converts empty strings to nil for optional fields
+    # Keeps 0 as-is so validation can reject it (quantity must be > 0)
+    def normalize_quantity(value)
+      return nil if value.blank?
+
+      value.to_f
+    end
+
+    def normalize_fraction(value)
+      value.presence
+    end
+
+    def normalize_unit(value)
+      value.presence
     end
 
     def build_success_result(pantry_item)

@@ -109,6 +109,13 @@ h2 {
   box-shadow: 0 0 0 3px rgba(152, 182, 148, 0.1);
 }
 
+.field-help {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+  font-style: italic;
+}
+
 /* Buttons */
 .btn {
   display: inline-block;

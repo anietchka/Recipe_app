@@ -37,13 +37,32 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_includes pantry_item.errors[:ingredient], I18n.t("errors.messages.blank")
   end
 
-  test "should require quantity or fraction" do
+  test "should be valid with only ingredient (no quantity, no fraction, no unit)" do
     pantry_item = PantryItem.new(
       user: @user,
       ingredient: @ingredient
     )
+    assert pantry_item.valid?
+  end
+
+  test "should validate quantity is strictly greater than zero when present" do
+    pantry_item = PantryItem.new(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: 0.0
+    )
     assert_not pantry_item.valid?
-    assert_includes pantry_item.errors[:base], I18n.t("activerecord.errors.models.pantry_item.attributes.base.quantity_or_fraction_required")
+    assert_includes pantry_item.errors[:quantity], I18n.t("errors.messages.greater_than", count: 0)
+  end
+
+  test "should validate quantity is strictly greater than zero when present (negative)" do
+    pantry_item = PantryItem.new(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: -1.0
+    )
+    assert_not pantry_item.valid?
+    assert_includes pantry_item.errors[:quantity], I18n.t("errors.messages.greater_than", count: 0)
   end
 
   test "should be valid with only fraction" do
@@ -84,15 +103,6 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_includes pantry_item.errors[:quantity], I18n.t("errors.messages.not_a_number")
   end
 
-  test "should validate quantity is greater than or equal to zero" do
-    pantry_item = PantryItem.new(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: -1.0
-    )
-    assert_not pantry_item.valid?
-    assert_includes pantry_item.errors[:quantity], I18n.t("errors.messages.greater_than_or_equal_to", count: 0)
-  end
 
   test "should belong to user" do
     pantry_item = PantryItem.create!(
@@ -200,11 +210,11 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_equal 0.5, pantry_item.available_quantity
   end
 
-  test "available_quantity returns 0.0 when quantity is 0 and fraction is blank" do
+  test "available_quantity returns 0.0 when quantity and fraction are nil" do
     pantry_item = PantryItem.create!(
       user: @user,
       ingredient: @ingredient,
-      quantity: 0.0,
+      quantity: nil,
       fraction: nil
     )
 
