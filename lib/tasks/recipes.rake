@@ -8,18 +8,24 @@ namespace :recipes do
     end
 
     default_path = Rails.root.join("db", "data", "recipes-en.json")
-    puts "Starting recipe import..."
-    puts "File: #{file_path || default_path}"
+    unless Rails.env.test?
+      puts "Starting recipe import..."
+      puts "File: #{file_path || default_path}"
+    end
 
     begin
       Recipes::ImportFromJson.call(file_path)
-      puts "✓ Recipe import completed successfully!"
-      puts "  - Recipes created: #{Recipe.count}"
-      puts "  - Ingredients created: #{Ingredient.count}"
-      puts "  - Recipe ingredients created: #{RecipeIngredient.count}"
+      unless Rails.env.test?
+        puts "✓ Recipe import completed successfully!"
+        puts "  - Recipes created: #{Recipe.count}"
+        puts "  - Ingredients created: #{Ingredient.count}"
+        puts "  - Recipe ingredients created: #{RecipeIngredient.count}"
+      end
     rescue StandardError => e
-      puts "✗ Recipe import failed: #{e.message}"
-      puts e.backtrace.first(5).join("\n")
+      unless Rails.env.test?
+        puts "✗ Recipe import failed: #{e.message}"
+        puts e.backtrace.first(5).join("\n")
+      end
       raise
     end
   end

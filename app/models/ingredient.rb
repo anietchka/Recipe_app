@@ -37,7 +37,6 @@ class Ingredient < ApplicationRecord
       "%#{sanitized_term}%"
     )
     .where("LENGTH(name) <= ?", 40)
-    .where("LOWER(name) NOT LIKE ?", "%such as to %")
     .where("name NOT LIKE ?", "%(%")
     .select(
       "ingredients.*",

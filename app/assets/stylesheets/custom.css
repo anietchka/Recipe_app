@@ -944,9 +944,7 @@ table form .btn {
   margin: 0;
 }
 
-.recipe-show-ingredients-list--shopping {
-  /* Shopping list style */
-}
+/* Shopping list styles are applied via .recipe-show-ingredients-list--missing modifier */
 
 .recipe-show-ingredient-item {
   display: flex;

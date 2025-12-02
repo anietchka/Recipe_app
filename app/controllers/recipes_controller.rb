@@ -15,17 +15,17 @@ class RecipesController < ApplicationController
 
   def show
     @missing_ingredients = @recipe.missing_ingredients_for(current_user)
-    
+
     # Calculate scores for the decorator
     # Count total ingredients
     total_count = @recipe.recipe_ingredients.count
-    
+
     # Count matched ingredients: ingredients NOT in @missing_ingredients
     # @missing_ingredients contains only ingredients that are missing or insufficient
     # So matched = total - missing
     missing_count = @missing_ingredients.count
     matched_count = total_count - missing_count
-    
+
     # Set instance variables for decorator
     @recipe.instance_variable_set(:@total_ingredients_count, total_count)
     @recipe.instance_variable_set(:@matched_ingredients_count, matched_count)

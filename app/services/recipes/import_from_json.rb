@@ -178,7 +178,6 @@ module Recipes
         cups tablespoons teaspoons pieces
         tablespoon teaspoon piece
         pounds pound ounces ounce
-        fluid\s+ounces fluid\s+ounce fl\s+oz
       ].join("|")
       "(?:#{base_units}|#{variations})"
     end

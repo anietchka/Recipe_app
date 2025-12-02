@@ -17,10 +17,7 @@ module UnitNormalizer
     "lb" => "lb",
     "ounces" => "oz",
     "ounce" => "oz",
-    "oz" => "oz",
-    "fluid ounces" => "oz",
-    "fluid ounce" => "oz",
-    "fl oz" => "oz"
+    "oz" => "oz"
   }.freeze
 
   # Module method: Normalizes a unit string directly via the concern

@@ -75,11 +75,12 @@ class IngredientAutocompleteTest < ActiveSupport::TestCase
     assert_not_includes result_names, @very_long_name.name
   end
 
-  test "filters out names containing 'such as'" do
+  test "does not filter out names containing 'such as'" do
     results = Ingredient.autocomplete("sauce")
     result_names = results.pluck(:name)
 
-    assert_not_includes result_names, @contains_such_as.name
+    assert_includes result_names, @contains_such_as.name
+    # @long_complex_name is still filtered out because it's longer than 40 characters
     assert_not_includes result_names, @long_complex_name.name
   end
 

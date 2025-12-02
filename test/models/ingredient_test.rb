@@ -75,11 +75,12 @@ class IngredientTest < ActiveSupport::TestCase
     assert_equal "oz", UnitNormalizer.normalize_unit("OUNCES")
   end
 
-  test "normalize_unit converts fluid ounces to oz" do
-    assert_equal "oz", UnitNormalizer.normalize_unit("fluid ounce")
-    assert_equal "oz", UnitNormalizer.normalize_unit("fluid ounces")
-    assert_equal "oz", UnitNormalizer.normalize_unit("Fluid Ounce")
-    assert_equal "oz", UnitNormalizer.normalize_unit("fl oz")
+  test "normalize_unit does not recognize fluid ounces" do
+    # Fluid ounces are not a recognized unit, they stay in the ingredient name
+    assert_nil UnitNormalizer.normalize_unit("fluid ounce")
+    assert_nil UnitNormalizer.normalize_unit("fluid ounces")
+    assert_nil UnitNormalizer.normalize_unit("Fluid Ounce")
+    assert_nil UnitNormalizer.normalize_unit("fl oz")
   end
 
   test "normalize_unit returns nil for invalid units" do
