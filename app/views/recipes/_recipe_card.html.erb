@@ -1,0 +1,36 @@
+<div class="recipe-card">
+  <div class="recipe-card__image-wrapper">
+    <% if recipe.image_url.present? %>
+      <%= image_tag recipe.image_url, alt: recipe.title, class: "recipe-card__image" %>
+    <% else %>
+      <div class="recipe-card__image-placeholder">
+        <%= t("recipes.index.no_image") %>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="recipe-card__content">
+    <h2 class="recipe-card__title"><%= recipe.title %></h2>
+
+    <div class="recipe-card__score">
+      <%= t("recipes.index.ingredients_score", matched: recipe.matched_ingredients, total: recipe.total_ingredients_count, missing: recipe.missing_count) %>
+    </div>
+
+    <div class="recipe-card__progress">
+      <div class="recipe-card__progress-bar">
+        <div
+          class="recipe-card__progress-fill"
+          style="width: <%= recipe.completion_percentage %>%"
+        ></div>
+      </div>
+
+      <span class="recipe-card__status <%= recipe.status_class %>">
+        <%= recipe.status_text %>
+      </span>
+    </div>
+
+    <div class="recipe-card__actions">
+      <%= link_to t("recipes.index.view_recipe"), recipe_path(recipe), class: "recipe-card__link" %>
+    </div>
+  </div>
+</div>

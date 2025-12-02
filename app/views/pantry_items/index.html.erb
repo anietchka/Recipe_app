@@ -4,6 +4,8 @@
   <button type="button" class="btn" onclick="openModal()">
     <%= t(".add_ingredient_button") %>
   </button>
+
+  <%= link_to t(".find_recipes_button"), recipes_path, class: "btn" %>
 </div>
 
 <%= render "form" %>

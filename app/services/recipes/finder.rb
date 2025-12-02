@@ -1,16 +1,33 @@
 module Recipes
   class Finder
-    def self.call(user)
-      new(user).call
+    DEFAULT_LIMIT = 20
+    DEFAULT_OFFSET = 0
+
+    def self.call(user, limit: DEFAULT_LIMIT, offset: DEFAULT_OFFSET)
+      new(user, limit: limit, offset: offset).call
     end
 
-    def initialize(user)
+    def initialize(user, limit: DEFAULT_LIMIT, offset: DEFAULT_OFFSET)
       @user = user
+      @limit = limit
+      @offset = offset
     end
 
     def call
       sql = <<-SQL.squish
-        SELECT recipes.id
+        SELECT#{' '}
+          recipes.id,
+          recipes.title,
+          recipes.cook_time,
+          recipes.prep_time,
+          recipes.image_url,
+          recipes.category,
+          recipes.ratings,
+          recipes.created_at,
+          recipes.updated_at,
+          COUNT(DISTINCT recipe_ingredients.id) AS total_ingredients_count,
+          COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END) AS matched_ingredients_count,
+          (COUNT(DISTINCT recipe_ingredients.id) - COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END)) AS missing_ingredients_count
         FROM recipes
         LEFT JOIN recipe_ingredients ON recipe_ingredients.recipe_id = recipes.id
         LEFT JOIN ingredients ON ingredients.id = recipe_ingredients.ingredient_id
@@ -20,20 +37,36 @@ module Recipes
           CASE WHEN COUNT(DISTINCT recipe_ingredients.id) = 0 THEN 1 ELSE 0 END,
           COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END) DESC,
           (COUNT(DISTINCT recipe_ingredients.id) - COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END)) ASC
+        LIMIT #{@limit}
+        OFFSET #{@offset}
       SQL
 
-      recipe_ids = ActiveRecord::Base.connection.execute(sql).map { |row| row["id"] }
+      results = ActiveRecord::Base.connection.execute(sql)
+      return [] if results.count == 0
 
-      return [] if recipe_ids.empty?
-
-      # Preserve order using array_position in PostgreSQL
-      Recipe.where(id: recipe_ids)
-            .order(Arel.sql("array_position(ARRAY[#{recipe_ids.join(',')}]::bigint[], recipes.id)").asc)
+      # Build Recipe objects with precalculated scores
+      results.to_a.map do |row|
+        recipe = Recipe.new(
+          id: row["id"],
+          title: row["title"],
+          cook_time: row["cook_time"],
+          prep_time: row["prep_time"],
+          image_url: row["image_url"],
+          category: row["category"],
+          ratings: row["ratings"],
+          created_at: row["created_at"],
+          updated_at: row["updated_at"]
+        )
+        recipe.instance_variable_set(:@total_ingredients_count, row["total_ingredients_count"].to_i)
+        recipe.instance_variable_set(:@matched_ingredients_count, row["matched_ingredients_count"].to_i)
+        recipe.instance_variable_set(:@missing_ingredients_count, row["missing_ingredients_count"].to_i)
+        recipe
+      end
     end
 
     private
 
-    attr_reader :user
+    attr_reader :user, :limit, :offset
 
     def sanitize_user_id
       ActiveRecord::Base.connection.quote(user.id)

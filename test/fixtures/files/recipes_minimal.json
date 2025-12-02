@@ -1,13 +1,11 @@
 [
   {
     "title": "Simple Pasta",
-    "description": "A simple pasta recipe",
-    "instructions": "1. Boil water\n2. Cook pasta\n3. Serve",
-    "total_time_minutes": 15,
+    "cook_time": 10,
+    "prep_time": 5,
     "image_url": "https://example.com/pasta.jpg",
-    "source_url": "https://example.com/recipe1",
-    "rating": 4.5,
-    "ratings_count": 100,
+    "category": "Italian",
+    "ratings": 4.5,
     "ingredients": [
       "200g pasta, finely chopped",
       "2 eggs, only yellow, beaten",
@@ -17,13 +15,11 @@
   },
   {
     "title": "Tomato Salad",
-    "description": "Fresh tomato salad",
-    "instructions": "1. Cut tomatoes\n2. Add salt\n3. Serve",
-    "total_time_minutes": 10,
+    "cook_time": 0,
+    "prep_time": 10,
     "image_url": null,
-    "source_url": null,
-    "rating": 4.0,
-    "ratings_count": 50,
+    "category": "Salad",
+    "ratings": 4.0,
     "ingredients": [
       "3 tomatoes",
       "fresh basil",
@@ -32,6 +28,11 @@
   },
   {
     "title": "Test Recipe",
+    "cook_time": 15,
+    "prep_time": 5,
+    "image_url": null,
+    "category": null,
+    "ratings": null,
     "ingredients": [
       "½ cup water",
       "1 ½ cups flour",
@@ -41,7 +42,11 @@
   },
   {
     "title": "Parenthetical Quantities Test",
-    "description": "Test recipe for parenthetical quantities and pound/ounce units",
+    "cook_time": 30,
+    "prep_time": 15,
+    "image_url": null,
+    "category": "Baking",
+    "ratings": 3.8,
     "ingredients": [
       "3 (12 ounce) packages refrigerated biscuit dough",
       "1 (12 fluid ounce) can or bottle beer",
@@ -57,6 +62,16 @@
       "(3.5 ounce) package instant vanilla pudding mix",
       "(.25 ounce) package active dry yeast"
     ]
+  },
+  {
+    "title": "Large Potatoes Test",
+    "cook_time": 30,
+    "prep_time": 10,
+    "image_url": null,
+    "category": "Vegetables",
+    "ratings": 4.0,
+    "ingredients": [
+      "2 large potatoes, peeled and thinly sliced"
+    ]
   }
 ]
-

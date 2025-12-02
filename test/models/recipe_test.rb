@@ -25,13 +25,11 @@ class RecipeTest < ActiveSupport::TestCase
   test "should accept optional attributes" do
     recipe = Recipe.new(
       title: "Pasta Carbonara",
-      description: "A classic Italian dish",
-      instructions: "Cook pasta, mix with eggs and bacon",
-      total_time_minutes: 30,
+      cook_time: 20,
+      prep_time: 10,
       image_url: "https://example.com/pasta.jpg",
-      source_url: "https://example.com/recipe",
-      rating: 4.5,
-      ratings_count: 100
+      category: "Italian",
+      ratings: 4.5
     )
     assert recipe.valid?
   end
@@ -414,6 +412,23 @@ class RecipeTest < ActiveSupport::TestCase
     # 2 3/4 - 1 1/4 = 1 1/2
     assert_equal 1.0, sugar_missing[:missing_quantity]
     assert_equal "1/2", sugar_missing[:missing_fraction]
+  end
+
+  test "missing_ingredients_for does not include ingredient when pantry item exists without quantity" do
+    user = User.create!(email: "demo@example.com")
+    salt = Ingredient.create!(name: "Salt", canonical_name: "salt")
+
+    recipe = Recipe.create!(title: "Salted Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: salt, original_text: "1 tsp salt", quantity: 1.0, unit: "tsp")
+
+    # User has salt in pantry but no quantity specified (base ingredient)
+    PantryItem.create!(user: user, ingredient: salt, quantity: nil, fraction: nil, unit: nil)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    # Salt should not be in missing ingredients since it exists in pantry
+    salt_missing = missing.find { |m| m[:ingredient_id] == salt.id }
+    assert_nil salt_missing, "Ingredient with pantry item (no quantity) should not be missing"
   end
 
   test "missing_ingredients_for returns all ingredients when user has no pantry items" do

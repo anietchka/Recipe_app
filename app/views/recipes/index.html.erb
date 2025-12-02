@@ -1,0 +1,25 @@
+<h1><%= t(".title") %></h1>
+
+<% if @recipes.any? %>
+  <div class="recipes-container">
+    <% @recipes.each do |recipe| %>
+      <%= render "recipe_card", recipe: recipe %>
+    <% end %>
+  </div>
+  <% if @page > 1 || @has_more %>
+    <div class="pagination">
+      <% if @page > 1 %>
+        <%= link_to t(".previous_page"), recipes_path(page: @page - 1), class: "btn" %>
+      <% end %>
+
+      <% if @has_more %>
+        <%= link_to t(".next_page"), recipes_path(page: @page + 1), class: "btn" %>
+      <% end %>
+    </div>
+  <% end %>
+<% else %>
+  <div class="empty-state">
+    <p><%= t(".no_recipes") %></p>
+    <%= link_to t(".back_to_pantry"), pantry_items_path, class: "btn" %>
+  </div>
+<% end %>
