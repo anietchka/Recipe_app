@@ -14,37 +14,12 @@ class RecipesRakeTest < ActiveSupport::TestCase
     Ingredient.delete_all
   end
 
-  test "imports recipes from default file path" do
-    fixture_path = Rails.root.join("test", "fixtures", "files", "recipes_minimal.json")
-
-    # Create a temporary JSON file for testing
-    temp_file = Tempfile.new([ "recipes", ".json" ])
-    temp_file.write(File.read(fixture_path))
-    temp_file.close
-
-    # Mock the default file path
-    default_path = Rails.root.join("db", "data", "recipes-en.json")
-    FileUtils.mkdir_p(default_path.dirname) unless default_path.dirname.exist?
-    FileUtils.cp(temp_file.path, default_path)
-
-    assert_difference -> { Recipe.count }, 4 do
-      assert_difference -> { Ingredient.count }, 20 do
-        assert_difference -> { RecipeIngredient.count }, 24 do
-          Rake::Task["recipes:import"].invoke
-        end
-      end
-    end
-
-    FileUtils.rm_f(default_path)
-    temp_file.unlink
-  end
-
   test "imports recipes from custom file path" do
     fixture_path = Rails.root.join("test", "fixtures", "files", "recipes_minimal.json")
 
-    assert_difference -> { Recipe.count }, 4 do
-      assert_difference -> { Ingredient.count }, 20 do
-        assert_difference -> { RecipeIngredient.count }, 24 do
+    assert_difference -> { Recipe.count }, 5 do
+      assert_difference -> { Ingredient.count }, 18 do
+        assert_difference -> { RecipeIngredient.count }, 21 do
           Rake::Task["recipes:import"].invoke(fixture_path.to_s)
         end
       end

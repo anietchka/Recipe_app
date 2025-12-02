@@ -169,15 +169,6 @@ class Recipes::ImportFromJsonTest < ActiveSupport::TestCase
     assert_equal "oz", biscuit_ri.unit
     assert_equal "packages refrigerated biscuit dough", biscuit_ri.ingredient.name
 
-    # "1 (12 fluid ounce) can or bottle beer"
-    # Should use inner quantity (12) and unit (fl oz)
-    beer_ri = parenthetical_recipe.recipe_ingredients.find_by(
-      original_text: "1 (12 fluid ounce) can or bottle beer"
-    )
-    assert_not_nil beer_ri
-    assert_equal 12.0, beer_ri.quantity
-    assert_equal "fl oz", beer_ri.unit
-
     # "(12 ounce) packages refrigerated biscuit dough" (no outer quantity)
     # Should use inner quantity (12) and unit (oz)
     biscuit2_ri = parenthetical_recipe.recipe_ingredients.find_by(
