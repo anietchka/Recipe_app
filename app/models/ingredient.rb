@@ -1,10 +1,10 @@
 class Ingredient < ApplicationRecord
+  include UnitNormalizer
+
   # Common measurement units used in recipes
   MEASUREMENT_UNITS = %w[
     g kg mg ml l cl dl oz lb
-    cup cups tbsp tsp
-    teaspoon teaspoons tablespoon tablespoons
-    piece pieces pcs
+    cup tbsp tsp pcs
   ].freeze
 
   # Pre-compiled regex pattern string for measurement units to avoid ReDoS warnings

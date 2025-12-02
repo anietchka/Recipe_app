@@ -6,6 +6,7 @@ class PantryItem < ApplicationRecord
   validates :ingredient, presence: true
   validates :quantity, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :ingredient_id, uniqueness: { scope: :user_id }
+  validates :unit, inclusion: { in: Ingredient::MEASUREMENT_UNITS }, allow_nil: true
 
   validate :quantity_or_fraction_required
 

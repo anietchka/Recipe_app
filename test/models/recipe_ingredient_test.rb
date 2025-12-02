@@ -39,11 +39,11 @@ class RecipeIngredientTest < ActiveSupport::TestCase
       ingredient: @ingredient,
       original_text: "2 eggs",
       quantity: 2.0,
-      unit: "pieces"
+      unit: "pcs"
     )
     assert recipe_ingredient.valid?
     assert_equal 2.0, recipe_ingredient.quantity
-    assert_equal "pieces", recipe_ingredient.unit
+    assert_equal "pcs", recipe_ingredient.unit
   end
 
   test "should belong to recipe" do
@@ -134,5 +134,41 @@ class RecipeIngredientTest < ActiveSupport::TestCase
     )
 
     assert_equal 0.0, recipe_ingredient.required_quantity
+  end
+
+  test "should accept valid unit from MEASUREMENT_UNITS" do
+    Ingredient::MEASUREMENT_UNITS.each do |unit|
+      recipe_ingredient = RecipeIngredient.new(
+        recipe: @recipe,
+        ingredient: @ingredient,
+        original_text: "100 #{unit} ingredient",
+        quantity: 100.0,
+        unit: unit
+      )
+      assert recipe_ingredient.valid?, "Unit #{unit} should be valid"
+    end
+  end
+
+  test "should reject invalid unit" do
+    recipe_ingredient = RecipeIngredient.new(
+      recipe: @recipe,
+      ingredient: @ingredient,
+      original_text: "100 invalid_unit ingredient",
+      quantity: 100.0,
+      unit: "invalid_unit"
+    )
+    assert_not recipe_ingredient.valid?
+    assert_includes recipe_ingredient.errors[:unit], I18n.t("errors.messages.inclusion")
+  end
+
+  test "should accept nil unit" do
+    recipe_ingredient = RecipeIngredient.new(
+      recipe: @recipe,
+      ingredient: @ingredient,
+      original_text: "some ingredient",
+      quantity: 100.0,
+      unit: nil
+    )
+    assert recipe_ingredient.valid?
   end
 end

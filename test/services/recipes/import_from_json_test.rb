@@ -95,13 +95,14 @@ class Recipes::ImportFromJsonTest < ActiveSupport::TestCase
     assert_not_nil salt_ri
     assert_nil salt_ri.quantity
     assert_equal "1/3", salt_ri.fraction
-    assert_equal "teaspoon", salt_ri.unit
+    assert_equal "tsp", salt_ri.unit
 
     # "2 ⅔ tablespoons oil" should have quantity: 2, fraction: "2/3"
     oil_ri = recipe.recipe_ingredients.find_by(original_text: "2 ⅔ tablespoons oil")
     assert_not_nil oil_ri
     assert_equal 2.0, oil_ri.quantity
     assert_equal "2/3", oil_ri.fraction
+    assert_equal "tbsp", oil_ri.unit
   end
 
   test "handles ingredients without quantities" do

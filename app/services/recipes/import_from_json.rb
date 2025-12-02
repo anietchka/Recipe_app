@@ -101,8 +101,9 @@ module Recipes
     end
 
     def match_ingredient_pattern(text)
-      # Use pre-compiled regex pattern string from Ingredient to avoid ReDoS warnings
-      units_pattern = Ingredient::UNITS_PATTERN_STRING
+      # Extended pattern to match unit variations (cups, tablespoons, teaspoons, pieces, etc.)
+      # This pattern matches both normalized units and their variations
+      units_pattern = "(?:#{Ingredient::UNITS_PATTERN_STRING}|cups?|tablespoons?|teaspoons?|pieces?)"
       regex = /^(\d+\.?\d*)?\s*(\d+\/\d+)?\s*(#{units_pattern})?/i
       text.match(regex)
     end
@@ -111,7 +112,8 @@ module Recipes
       whole_number_text = match[1]
       fraction_text = match[2]
       unit = match[3]&.downcase
-      [ whole_number_text, fraction_text, unit ]
+      normalized_unit = Ingredient.normalize_unit(unit) if unit
+      [ whole_number_text, fraction_text, normalized_unit ]
     end
 
     def convert_decimal_to_fraction(decimal)

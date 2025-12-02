@@ -1,5 +1,6 @@
 class Recipe < ApplicationRecord
   include FractionConverter
+  include UnitConverter
 
   has_many :recipe_ingredients, dependent: :destroy
   has_many :ingredients, through: :recipe_ingredients
@@ -32,11 +33,19 @@ class Recipe < ApplicationRecord
 
       next unless pantry_item
 
-      quantity_to_decrement = recipe_ingredient.required_quantity
+      # Convert required quantity to pantry item's unit
+      required_quantity = recipe_ingredient.required_quantity
+      required_in_pantry_unit = convert_quantity_to_pantry_unit(
+        required_quantity,
+        recipe_ingredient.unit,
+        pantry_item.unit
+      )
+
+      next unless required_in_pantry_unit
 
       current_quantity = pantry_item.available_quantity
 
-      new_quantity_total = [ current_quantity - quantity_to_decrement, 0.0 ].max
+      new_quantity_total = [ current_quantity - required_in_pantry_unit, 0.0 ].max
 
       new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
 
@@ -52,14 +61,68 @@ class Recipe < ApplicationRecord
 
     if pantry_item.nil?
       build_missing_hash(recipe_ingredient, required_quantity)
-    elsif insufficient_quantity?(pantry_item, required_quantity)
-      missing_total = required_quantity - pantry_item.available_quantity
-      build_missing_hash(recipe_ingredient, missing_total)
+    elsif insufficient_quantity?(recipe_ingredient, pantry_item)
+      # Convert pantry quantity to recipe unit for comparison
+      available_in_recipe_unit = convert_quantity_to_recipe_unit(
+        pantry_item.available_quantity,
+        pantry_item.unit,
+        recipe_ingredient.unit
+      )
+
+      if available_in_recipe_unit.nil?
+        # Units incompatible, treat as missing
+        build_missing_hash(recipe_ingredient, required_quantity)
+      else
+        missing_total = required_quantity - available_in_recipe_unit
+        build_missing_hash(recipe_ingredient, missing_total) if missing_total > 0
+      end
     end
   end
 
-  def insufficient_quantity?(pantry_item, required_quantity)
-    pantry_item.available_quantity < required_quantity
+  def insufficient_quantity?(recipe_ingredient, pantry_item)
+    # If no units specified, compare directly
+    if pantry_item.unit.nil? && recipe_ingredient.unit.nil?
+      return recipe_ingredient.required_quantity > pantry_item.available_quantity
+    end
+
+    # If one has unit and other doesn't, treat as insufficient (can't compare)
+    return true if pantry_item.unit.nil? || recipe_ingredient.unit.nil?
+
+    # If units are incompatible, treat as insufficient
+    return true unless units_compatible?(pantry_item.unit, recipe_ingredient.unit)
+
+    # Convert pantry quantity to recipe unit for comparison
+    available_in_recipe_unit = convert_quantity(
+      pantry_item.available_quantity,
+      pantry_item.unit,
+      recipe_ingredient.unit
+    )
+
+    return true unless available_in_recipe_unit
+
+    recipe_ingredient.required_quantity > available_in_recipe_unit
+  end
+
+  def convert_quantity_to_recipe_unit(quantity, from_unit, to_unit)
+    return quantity if from_unit == to_unit
+    return quantity if from_unit.nil? || to_unit.nil?
+
+    converted = convert_quantity(quantity, from_unit, to_unit)
+    return converted if converted
+
+    # If conversion fails, return nil to indicate incompatibility
+    nil
+  end
+
+  def convert_quantity_to_pantry_unit(quantity, from_unit, to_unit)
+    return quantity if from_unit == to_unit
+    return quantity if from_unit.nil? || to_unit.nil?
+
+    converted = convert_quantity(quantity, from_unit, to_unit)
+    return converted if converted
+
+    # If conversion fails, return nil to indicate incompatibility
+    nil
   end
 
   def build_missing_hash(recipe_ingredient, missing_total)

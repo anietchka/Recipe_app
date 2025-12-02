@@ -36,6 +36,44 @@ class IngredientTest < ActiveSupport::TestCase
     assert_equal "parmesan cheese", Ingredient.canonicalize("100g parmesan cheese")
   end
 
+  test "normalize_unit converts cups to cup" do
+    assert_equal "cup", Ingredient.normalize_unit("cups")
+    assert_equal "cup", Ingredient.normalize_unit("Cups")
+    assert_equal "cup", Ingredient.normalize_unit("CUP")
+  end
+
+  test "normalize_unit converts tablespoons to tbsp" do
+    assert_equal "tbsp", Ingredient.normalize_unit("tablespoon")
+    assert_equal "tbsp", Ingredient.normalize_unit("tablespoons")
+    assert_equal "tbsp", Ingredient.normalize_unit("Tablespoon")
+  end
+
+  test "normalize_unit converts teaspoons to tsp" do
+    assert_equal "tsp", Ingredient.normalize_unit("teaspoon")
+    assert_equal "tsp", Ingredient.normalize_unit("teaspoons")
+    assert_equal "tsp", Ingredient.normalize_unit("Teaspoon")
+  end
+
+  test "normalize_unit converts pieces to pcs" do
+    assert_equal "pcs", Ingredient.normalize_unit("pieces")
+    assert_equal "pcs", Ingredient.normalize_unit("piece")
+    assert_equal "pcs", Ingredient.normalize_unit("Pieces")
+    assert_equal "pcs", Ingredient.normalize_unit("PIECES")
+  end
+  test "normalize_unit returns nil for invalid units" do
+    assert_nil Ingredient.normalize_unit("invalid")
+    assert_nil Ingredient.normalize_unit("")
+  end
+
+  test "normalize_unit returns unit as-is if already normalized" do
+    assert_equal "cup", Ingredient.normalize_unit("cup")
+    assert_equal "tbsp", Ingredient.normalize_unit("tbsp")
+    assert_equal "tsp", Ingredient.normalize_unit("tsp")
+    assert_equal "g", Ingredient.normalize_unit("g")
+    assert_equal "kg", Ingredient.normalize_unit("kg")
+    assert_equal "pcs", Ingredient.normalize_unit("pcs")
+  end
+
   # Tests for model validations
   test "should be valid with name and canonical_name" do
     ingredient = Ingredient.new(name: "Yellow Onion", canonical_name: "yellow onion")
