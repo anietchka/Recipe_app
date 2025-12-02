@@ -67,6 +67,10 @@ class Recipe < ApplicationRecord
 
     if pantry_item.nil?
       build_missing_hash(recipe_ingredient, required_quantity)
+    elsif pantry_item_without_quantity?(pantry_item)
+      # PantryItem exists but has no quantity specified - consider it available
+      # This means the user has the ingredient, even if we don't know how much
+      nil
     elsif insufficient_quantity?(recipe_ingredient, pantry_item)
       # Convert pantry quantity to recipe unit for comparison
       available_in_recipe_unit = convert_quantity_to_recipe_unit(
@@ -83,6 +87,11 @@ class Recipe < ApplicationRecord
         build_missing_hash(recipe_ingredient, missing_total) if missing_total > 0
       end
     end
+  end
+
+  def pantry_item_without_quantity?(pantry_item)
+    # Check if pantry item has no quantity specified (both quantity and fraction are nil/blank)
+    pantry_item.quantity.nil? && pantry_item.fraction.blank?
   end
 
   def insufficient_quantity?(recipe_ingredient, pantry_item)

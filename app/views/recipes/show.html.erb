@@ -1,0 +1,225 @@
+<div class="recipe-show-container">
+  <%= link_to t(".back_to_recipes"), recipes_path, class: "recipe-show-back-link" %>
+
+  <div class="recipe-show-card">
+    <!-- Header with image -->
+    <div class="recipe-show-header">
+      <% if @recipe.image_url.present? %>
+        <div class="recipe-show-image">
+          <%= image_tag @recipe.image_url, alt: @recipe.title, class: "recipe-show-image__img" %>
+        </div>
+      <% else %>
+        <div class="recipe-show-image-placeholder">
+          <%= t(".no_image_available") %>
+        </div>
+      <% end %>
+
+      <!-- Title and meta info -->
+      <div class="recipe-show-title-section">
+        <h1 class="recipe-show-title"><%= @recipe.title %></h1>
+
+        <div class="recipe-show-meta">
+          <% if @recipe.prep_time.present? || @recipe.cook_time.present? %>
+            <span class="recipe-show-meta__item">
+              <% if @recipe.prep_time.present? %>
+                <%= t(".prep_time", minutes: @recipe.prep_time) %>
+              <% end %>
+
+              <% if @recipe.prep_time.present? && @recipe.cook_time.present? %>
+                <span class="recipe-show-meta__separator">•</span>
+              <% end %>
+
+              <% if @recipe.cook_time.present? %>
+                <%= t(".cook_time", minutes: @recipe.cook_time) %>
+              <% end %>
+            </span>
+          <% end %>
+
+          <% if @recipe.ratings.present? %>
+            <span class="recipe-show-meta__item">
+              <span class="recipe-show-meta__separator">•</span> ⭐
+              <%= @recipe.ratings.round(1) %>
+            </span>
+          <% end %>
+
+          <% if @recipe.category.present? %>
+            <span class="recipe-show-meta__item">
+              <span class="recipe-show-meta__separator">•</span>
+              <%= @recipe.category %>
+            </span>
+          <% end %>
+        </div>
+
+        <!-- Availability badge -->
+        <% decorated_recipe = RecipeDecorator.new(@recipe)
+          total = decorated_recipe.total_ingredients_count
+          matched = decorated_recipe.matched_ingredients
+          missing = decorated_recipe.missing_count
+          status_class = decorated_recipe.status_class
+          status_text = decorated_recipe.status_text %>
+
+        <div class="recipe-show-availability">
+          <span class="recipe-show-availability__text">
+            <%= t(".availability_text", matched: matched, total: total, missing: missing) %>
+          </span>
+
+          <span class="recipe-show-availability__badge <%= status_class %>">
+            <%= status_text %>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ingredients section -->
+    <div class="recipe-show-ingredients">
+      <h2 class="recipe-show-section-title"><%= t(".ingredients_title") %></h2>
+
+      <div class="recipe-show-ingredients-grid">
+        <!-- Available ingredients -->
+        <div class="recipe-show-ingredients-column">
+          <h3 class="recipe-show-ingredients-column__title">
+            <%= t(".available_ingredients_title") %>
+          </h3>
+
+          <ul class="recipe-show-ingredients-list">
+            <% @recipe.recipe_ingredients.includes(:ingredient).each do |recipe_ingredient| %>
+              <% missing_info = @missing_ingredients.find { |m| m[:ingredient_id] == recipe_ingredient.ingredient_id }
+                is_available = missing_info.nil? %>
+
+              <% if is_available %>
+                <li
+                  class="
+                    recipe-show-ingredient-item
+                    recipe-show-ingredient-item--available
+                  "
+                >
+                  <span class="recipe-show-ingredient-item__icon">✅</span>
+
+                  <span class="recipe-show-ingredient-item__text">
+                    <strong><%= recipe_ingredient.ingredient.name %></strong>
+
+                    <% if recipe_ingredient.quantity.present? && recipe_ingredient.quantity > 0 %>
+                      –
+                      <%= recipe_ingredient.quantity %>
+                    <% end %>
+
+                    <% if recipe_ingredient.fraction.present? %>
+                      <%= recipe_ingredient.fraction %>
+                    <% end %>
+
+                    <% if recipe_ingredient.unit.present? %>
+                      <%= recipe_ingredient.unit %>
+                    <% end %>
+
+                    <% if recipe_ingredient.original_text.present? && (recipe_ingredient.quantity.blank? || recipe_ingredient.quantity.zero?) && recipe_ingredient.fraction.blank? %>
+                      –
+                      <%= recipe_ingredient.original_text %>
+                    <% end %>
+                  </span>
+                </li>
+              <% end %>
+            <% end %>
+
+            <% if @recipe.recipe_ingredients.includes(:ingredient).none? { |ri| @missing_ingredients.find { |m| m[:ingredient_id] == ri.ingredient_id }.nil? } %>
+              <li
+                class="
+                  recipe-show-ingredient-item
+                  recipe-show-ingredient-item--empty
+                "
+              >
+                <%= t(".no_available_ingredients") %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+
+        <!-- Missing ingredients (shopping list) -->
+        <div class="recipe-show-ingredients-column">
+          <h3
+            class="
+              recipe-show-ingredients-column__title
+              recipe-show-ingredients-column__title--missing
+            "
+          >
+            <%= t(".missing_ingredients_title") %>
+          </h3>
+
+          <ul
+            class="
+              recipe-show-ingredients-list
+              recipe-show-ingredients-list--shopping
+            "
+          >
+            <% if @missing_ingredients.any? %>
+              <% @missing_ingredients.each do |missing_info| %>
+                <% recipe_ingredient = missing_info[:recipe_ingredient] %>
+
+                <li
+                  class="
+                    recipe-show-ingredient-item
+                    recipe-show-ingredient-item--missing
+                  "
+                >
+                  <input
+                    type="checkbox"
+                    class="recipe-show-ingredient-item__checkbox"
+                    id="ingredient-<%= recipe_ingredient.ingredient_id %>"
+                  >
+
+                  <label
+                    for="ingredient-<%= recipe_ingredient.ingredient_id %>"
+                    class="recipe-show-ingredient-item__label"
+                  >
+                    <strong><%= recipe_ingredient.ingredient.name %></strong>
+
+                    <% if recipe_ingredient.quantity.present? && recipe_ingredient.quantity > 0 %>
+                      –
+                      <%= recipe_ingredient.quantity %>
+                    <% end %>
+
+                    <% if recipe_ingredient.fraction.present? %>
+                      <%= recipe_ingredient.fraction %>
+                    <% end %>
+
+                    <% if recipe_ingredient.unit.present? %>
+                      <%= recipe_ingredient.unit %>
+                    <% end %>
+
+                    <% if recipe_ingredient.original_text.present? && (recipe_ingredient.quantity.blank? || recipe_ingredient.quantity.zero?) && recipe_ingredient.fraction.blank? %>
+                      –
+                      <%= recipe_ingredient.original_text %>
+                    <% end %>
+
+                    <% if missing_info[:missing_quantity].present? || missing_info[:missing_fraction].present? %>
+                      <span class="recipe-show-ingredient-item__missing-info">
+                        (<%= t(".missing", quantity: missing_info[:missing_quantity] || "", fraction: missing_info[:missing_fraction] || "") %>)
+                      </span>
+                    <% end %>
+                  </label>
+                </li>
+              <% end %>
+            <% else %>
+              <li
+                class="
+                  recipe-show-ingredient-item
+                  recipe-show-ingredient-item--empty
+                "
+              >
+                <%= t(".no_missing_ingredients") %>
+              </li>
+            <% end %>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cook button -->
+    <div class="recipe-show-actions">
+      <%= form_with url: cook_recipe_path(@recipe), method: :post, local: true, class: "recipe-show-cook-form" do |f| %>
+        <%= f.submit t(".cook_button"), class: "recipe-show-cook-button" %>
+
+        <p class="recipe-show-cook-hint"><%= t(".cook_hint") %></p>
+      <% end %>
+    </div>
+  </div>
+</div>

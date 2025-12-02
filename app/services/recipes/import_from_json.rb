@@ -25,26 +25,27 @@ module Recipes
     end
 
     def load_json_file
+      unless File.exist?(file_path)
+        error_msg = "File not found: #{file_path}. Run 'rails recipes:download' to download it from S3."
+        Rails.logger.error error_msg
+        raise Errno::ENOENT, error_msg
+      end
+
       file_content = File.read(file_path)
       JSON.parse(file_content)
     rescue JSON::ParserError => e
       Rails.logger.error "Failed to parse JSON file: #{e.message}"
-      raise
-    rescue Errno::ENOENT => e
-      Rails.logger.error "File not found: #{file_path}"
       raise
     end
 
     def import_recipe(recipe_data)
       recipe = Recipe.create!(
         title: recipe_data["title"],
-        description: recipe_data["description"],
-        instructions: recipe_data["instructions"],
-        total_time_minutes: recipe_data["total_time_minutes"],
-        image_url: recipe_data["image_url"],
-        source_url: recipe_data["source_url"],
-        rating: recipe_data["rating"],
-        ratings_count: recipe_data["ratings_count"]
+        cook_time: recipe_data["cook_time"],
+        prep_time: recipe_data["prep_time"],
+        image_url: recipe_data["image_url"] || recipe_data["image"],
+        category: recipe_data["category"],
+        ratings: recipe_data["ratings"]
       )
 
       import_ingredients(recipe, recipe_data["ingredients"] || [])
@@ -162,7 +163,11 @@ module Recipes
       # Use negative lookahead to prevent capturing a number that's part of a fraction
       # Pattern: (whole_number not followed by /) followed by optional fraction, then optional unit
       # Note: \d*\.?\d+ allows numbers starting with a dot (e.g., ".25")
-      regex = /^(\d*\.?\d+(?!\/))?\s*(\d+\/\d+)?\s*(#{units_pattern})?/i
+      # Unit must be:
+      #   - Preceded by a digit or space (to match "200g" but not "large")
+      #   - Followed by space, punctuation, or end of string (to prevent matching "l" in "large")
+      # Use lookbehind to ensure unit is preceded by digit/space, and lookahead to ensure it's followed by non-letter
+      regex = /^(\d*\.?\d+(?!\/))?\s*(\d+\/\d+)?\s*(?:(?<=\d|\s)(#{units_pattern})(?=\s|[^a-zA-Z]|$))?/i
       text.match(regex)
     end
 
@@ -181,6 +186,7 @@ module Recipes
     def extract_matched_parts(match)
       whole_number_text = match[1]&.strip.presence
       fraction_text = match[2]
+      # Unit is captured in group 3 (inside the non-capturing group)
       unit = match[3]&.downcase
       normalized_unit = UnitNormalizer.normalize_unit(unit) if unit
       [ whole_number_text, fraction_text, normalized_unit ]

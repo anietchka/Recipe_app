@@ -18,5 +18,13 @@ Rails.application.routes.draw do
       patch :decrement
     end
   end
+
+  resources :recipes, only: %i[index show] do
+    member do
+      post :cook
+      patch :cook
+    end
+  end
+
   get "ingredients/search", to: "ingredients#search", as: :ingredients_search
 end
