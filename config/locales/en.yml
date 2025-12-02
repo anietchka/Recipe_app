@@ -29,6 +29,50 @@
 
 en:
   hello: "Hello world"
+  pantry_items:
+    index:
+      title: "My Pantry"
+      add_ingredient_button: "Add Ingredient"
+      add_ingredient_title: "Add Ingredient to Pantry"
+      ingredient: "Ingredient"
+      ingredient_placeholder: "Type ingredient name..."
+      quantity: "Quantity"
+      quantity_placeholder: "e.g. 500"
+      fraction: "Fraction"
+      fraction_placeholder: "Select fraction..."
+      no_fraction: "None"
+      no_unit: "None"
+      unit: "Unit"
+      unit_placeholder: "Select unit..."
+      add_button: "Add to Pantry"
+      cancel_button: "Cancel"
+      pantry_list: "Pantry Items"
+      actions: "Actions"
+      update_button: "Update"
+      delete_button: "Delete"
+      confirm_delete: "Are you sure?"
+      empty_pantry: "Your pantry is empty. Add some ingredients to get started!"
+      no_quantity: "No quantity"
+      increment: "Increase quantity"
+      decrement: "Decrease quantity"
+      ingredient_required: "can't be blank"
+      invalid_ingredient_name: "is invalid"
+    form:
+      error: "error"
+      errors: "errors"
+      prohibited_save: "prohibited this pantry item from being saved:"
+    create:
+      success: "Ingredient added to pantry successfully"
+    update:
+      success: "Pantry item updated successfully"
+    destroy:
+      success: "Ingredient removed from pantry successfully"
+    increment:
+      success: "Quantity increased successfully"
+      error: "Failed to increase quantity"
+    decrement:
+      success: "Quantity decreased successfully"
+      error: "Failed to decrease quantity"
   activerecord:
     errors:
       models:

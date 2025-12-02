@@ -1,0 +1,66 @@
+<div
+  id="add-form-modal"
+  class="modal <%= 'hidden' unless @pantry_item.errors.any? %>"
+>
+  <div class="modal-overlay" onclick="resetAndCloseModal()"></div>
+
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2><%= t("pantry_items.index.add_ingredient_button") %></h2>
+
+      <button type="button" class="modal-close" onclick="resetAndCloseModal()">
+        ×
+      </button>
+    </div>
+
+    <%= form_with model: @pantry_item, local: true, id: "pantry-item-form" do |form| %>
+      <% if @pantry_item.errors.any? %>
+        <div id="error_explanation">
+          <h2>
+            <%= pluralize(@pantry_item.errors.count, t("pantry_items.form.error"), t("pantry_items.form.errors")) %>
+            <%= t("pantry_items.form.prohibited_save") %>
+          </h2>
+
+          <ul>
+            <% @pantry_item.errors.full_messages.each do |message| %>
+              <li><%= message %></li>
+            <% end %>
+          </ul>
+        </div>
+      <% end %>
+
+      <div class="field">
+        <%= form.label :ingredient_name, t("pantry_items.index.ingredient") %>
+        <%= form.text_field :ingredient_name, id: "ingredient-name-input", autocomplete: "off", placeholder: t("pantry_items.index.ingredient_placeholder"), required: true, data: { search_url: ingredients_search_path }, autofocus: true %>
+
+        <div id="ingredient-suggestions" class="suggestions hidden"></div>
+      </div>
+
+      <div class="field">
+        <%= form.label :quantity, t("pantry_items.index.quantity") %>
+
+        <div class="field-row">
+          <div class="field field-quantity">
+            <%= form.number_field :quantity, step: :any, min: 0, placeholder: t("pantry_items.index.quantity_placeholder") %>
+          </div>
+
+          <div class="field field-fraction">
+            <%= form.select :fraction, options_for_select(@common_fractions.map { |f| [f, f] }, @pantry_item.fraction), { include_blank: t("pantry_items.index.no_fraction") } %>
+          </div>
+
+          <div class="field field-third">
+            <%= form.select :unit, options_for_select(Ingredient::MEASUREMENT_UNITS.map { |u| [u, u] }, @pantry_item.unit), { include_blank: t("pantry_items.index.no_unit") } %>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions actions-right">
+        <button type="button" class="btn-link" onclick="resetAndCloseModal()">
+          <%= t("pantry_items.index.cancel_button") %>
+        </button>
+
+        <%= form.submit t("pantry_items.index.add_button"), class: "btn" %>
+      </div>
+    <% end %>
+  </div>
+</div>
