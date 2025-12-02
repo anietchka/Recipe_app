@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_01_204958) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_02_185717) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -40,6 +40,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_01_204958) do
     t.string "fraction"
     t.bigint "ingredient_id", null: false
     t.text "original_text"
+    t.string "precision"
     t.float "quantity"
     t.bigint "recipe_id", null: false
     t.string "unit"

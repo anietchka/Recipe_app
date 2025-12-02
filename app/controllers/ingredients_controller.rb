@@ -3,12 +3,9 @@ class IngredientsController < ApplicationController
     query = params[:q].to_s.strip
     return render json: [] if query.blank?
 
-    # Search ingredients by name (case-insensitive)
-    ingredients = Ingredient.where("name ILIKE ?", "%#{query}%")
-                           .order(:name)
-                           .limit(10)
-                           .pluck(:id, :name)
+    # Use the autocomplete method with smart filtering and ordering
+    ingredients = Ingredient.autocomplete(query, limit: 15)
 
-    render json: ingredients.map { |id, name| { id: id, name: name } }
+    render json: ingredients.map { |ingredient| { id: ingredient.id, name: ingredient.name } }
   end
 end

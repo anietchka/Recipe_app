@@ -26,11 +26,20 @@
     if (modal) {
       modal.classList.remove('hidden');
       
+      // Initialize autocomplete when modal opens
+      // This ensures it works even after page reloads
+      if (typeof window.initAutocomplete === 'function') {
+        // Small delay to ensure DOM is ready and modal is visible
+        setTimeout(() => {
+          window.initAutocomplete();
+        }, 100);
+      }
+      
       // Focus on ingredient input after modal is shown
       if (input) {
         setTimeout(() => {
           input.focus();
-        }, 100);
+        }, 200);
       }
     }
   }
