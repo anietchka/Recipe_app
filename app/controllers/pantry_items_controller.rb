@@ -40,6 +40,13 @@ class PantryItemsController < ApplicationController
     new_quantity_total = current_quantity + 1.0
     new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
 
+    # If quantity becomes 0, we need to handle it differently
+    # For increment, we should always have a quantity > 0
+    if new_quantity.nil? && new_fraction.nil?
+      new_quantity = 1.0
+      new_fraction = nil
+    end
+
     if @pantry_item.update(quantity: new_quantity, fraction: new_fraction)
       redirect_to pantry_items_path, notice: t(".success")
     else
@@ -52,7 +59,14 @@ class PantryItemsController < ApplicationController
     new_quantity_total = [ current_quantity - 1.0, 0.0 ].max
     new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
 
-    if @pantry_item.update(quantity: new_quantity, fraction: new_fraction)
+    # If quantity becomes 0, set both to nil (base ingredient)
+    if new_quantity.nil? && new_fraction.nil?
+      if @pantry_item.update(quantity: nil, fraction: nil)
+        redirect_to pantry_items_path, notice: t(".success")
+      else
+        redirect_to pantry_items_path, alert: t(".error")
+      end
+    elsif @pantry_item.update(quantity: new_quantity, fraction: new_fraction)
       redirect_to pantry_items_path, notice: t(".success")
     else
       redirect_to pantry_items_path, alert: t(".error")

@@ -31,15 +31,17 @@
             <% end %>
           </div>
 
-          <div class="pantry-card-actions">
-            <%= button_to decrement_pantry_item_path(pantry_item), method: :patch, class: "quantity-btn quantity-btn-decrement", title: t("pantry_items.index.decrement") do %>
-              −
-            <% end %>
+          <% if pantry_item.quantity.present? || pantry_item.fraction.present? %>
+            <div class="pantry-card-actions">
+              <%= button_to decrement_pantry_item_path(pantry_item), method: :patch, class: "quantity-btn quantity-btn-decrement", title: t("pantry_items.index.decrement") do %>
+                −
+              <% end %>
 
-            <%= button_to increment_pantry_item_path(pantry_item), method: :patch, class: "quantity-btn quantity-btn-increment", title: t("pantry_items.index.increment") do %>
-              +
-            <% end %>
-          </div>
+              <%= button_to increment_pantry_item_path(pantry_item), method: :patch, class: "quantity-btn quantity-btn-increment", title: t("pantry_items.index.increment") do %>
+                +
+              <% end %>
+            </div>
+          <% end %>
         </div>
       </div>
     <% end %>

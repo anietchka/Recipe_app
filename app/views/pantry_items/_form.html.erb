@@ -52,6 +52,8 @@
             <%= form.select :unit, options_for_select(Ingredient::MEASUREMENT_UNITS.map { |u| [u, u] }, @pantry_item.unit), { include_blank: t("pantry_items.index.no_unit") } %>
           </div>
         </div>
+
+        <p class="field-help"><%= t("pantry_items.index.quantity_help") %></p>
       </div>
 
       <div class="actions actions-right">

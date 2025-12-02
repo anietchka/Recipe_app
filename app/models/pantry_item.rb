@@ -4,11 +4,9 @@ class PantryItem < ApplicationRecord
 
   validates :user, presence: true
   validates :ingredient, presence: true
-  validates :quantity, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  validates :quantity, numericality: { greater_than: 0 }, allow_nil: true
   validates :ingredient_id, uniqueness: { scope: :user_id }
   validates :unit, inclusion: { in: Ingredient::MEASUREMENT_UNITS }, allow_nil: true
-
-  validate :quantity_or_fraction_required
 
   # Returns the total available quantity for this pantry item
   # Combines quantity and fraction into a single decimal value
@@ -17,12 +15,6 @@ class PantryItem < ApplicationRecord
   end
 
   private
-
-  def quantity_or_fraction_required
-    return if quantity.present? || fraction.present?
-
-    errors.add(:base, :quantity_or_fraction_required)
-  end
 
   # Calculates total quantity from quantity and fraction
   # Converts fraction to decimal and adds to quantity

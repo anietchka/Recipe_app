@@ -91,5 +91,65 @@ module PantryItems
       assert result.success?
       assert_equal "1/2", result.pantry_item.fraction
     end
+
+    test "creates pantry item without quantity, fraction, or unit" do
+      salt = Ingredient.create!(name: "Salt", canonical_name: "salt")
+
+      params = {
+        ingredient_name: "Salt",
+        quantity: "",
+        fraction: "",
+        unit: ""
+      }
+
+      result = PantryItems::Create.call(@user, params)
+
+      assert result.success?
+      pantry_item = result.pantry_item
+      assert_equal salt, pantry_item.ingredient
+      assert_nil pantry_item.quantity
+      assert_nil pantry_item.fraction
+      assert_nil pantry_item.unit
+    end
+
+    test "ignores unit when quantity and fraction are both empty" do
+      params = {
+        ingredient_name: "Salt",
+        quantity: "",
+        fraction: "",
+        unit: "g"
+      }
+
+      result = PantryItems::Create.call(@user, params)
+
+      assert result.success?
+      pantry_item = result.pantry_item
+      assert_nil pantry_item.quantity
+      assert_nil pantry_item.fraction
+      assert_nil pantry_item.unit, "Unit should be nil when quantity and fraction are empty"
+    end
+
+    test "keeps unit when quantity is present" do
+      params = @params.merge(quantity: 100.0, unit: "g")
+
+      result = PantryItems::Create.call(@user, params)
+
+      assert result.success?
+      assert_equal "g", result.pantry_item.unit
+    end
+
+    test "keeps unit when fraction is present" do
+      params = {
+        ingredient_name: "Flour",
+        quantity: "",
+        fraction: "1/2",
+        unit: "cup"
+      }
+
+      result = PantryItems::Create.call(@user, params)
+
+      assert result.success?
+      assert_equal "cup", result.pantry_item.unit
+    end
   end
 end

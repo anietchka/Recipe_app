@@ -33,6 +33,12 @@ class Recipe < ApplicationRecord
 
       next unless pantry_item
 
+      # Skip pantry items without quantity (base ingredients like salt, oil, etc.)
+      # These are considered "infinite" and should not be decremented
+      if pantry_item.quantity.nil? && pantry_item.fraction.blank?
+        next
+      end
+
       # Convert required quantity to pantry item's unit
       required_quantity = recipe_ingredient.required_quantity
       required_in_pantry_unit = convert_quantity_to_pantry_unit(
@@ -138,19 +144,27 @@ class Recipe < ApplicationRecord
 
   # Converts a decimal to quantity and fraction
   # Returns [quantity, fraction] where fraction is a common fraction string or nil
+  # Returns [nil, nil] if decimal is zero (to allow pantry items without quantity)
+  # Returns [nil, fraction] if decimal is a fraction between 0 and 1
   def convert_to_quantity_and_fraction(decimal)
-    return [ 0.0, nil ] if decimal.zero?
+    return [ nil, nil ] if decimal.zero?
 
     whole = decimal.to_i
     decimal_part = decimal - whole
 
-    return [ whole, nil ] if decimal_part.zero?
+    # If we have a decimal part, try to convert it to a fraction
+    if decimal_part > 0
+      fraction = convert_decimal_to_fraction(decimal_part)
+      if fraction
+        # If whole is 0, return [nil, fraction], otherwise [whole, fraction]
+        return whole.zero? ? [ nil, fraction ] : [ whole, fraction ]
+      end
+    end
 
-    # Try to convert decimal part to common fractions
-    fraction = convert_decimal_to_fraction(decimal_part)
-    return [ whole, fraction ] if fraction
+    # If no fraction or whole is not zero, return whole as quantity
+    return [ whole, nil ] if whole > 0
 
-    # If no common fraction matches, store as decimal in quantity
+    # If decimal is between 0 and 1 and no common fraction matches, store as decimal
     [ decimal, nil ]
   end
 end
