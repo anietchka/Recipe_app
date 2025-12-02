@@ -14,6 +14,11 @@ module Recipes
     end
 
     def call
+      # Sanitize inputs to prevent SQL injection
+      user_id = user.id.to_i
+      limit_value = @limit.to_i
+      offset_value = @offset.to_i
+
       sql = <<-SQL.squish
         SELECT#{' '}
           recipes.id,
@@ -31,17 +36,19 @@ module Recipes
         FROM recipes
         LEFT JOIN recipe_ingredients ON recipe_ingredients.recipe_id = recipes.id
         LEFT JOIN ingredients ON ingredients.id = recipe_ingredients.ingredient_id
-        LEFT JOIN pantry_items ON pantry_items.ingredient_id = ingredients.id AND pantry_items.user_id = #{sanitize_user_id}
+        LEFT JOIN pantry_items ON pantry_items.ingredient_id = ingredients.id AND pantry_items.user_id = ?
         GROUP BY recipes.id
         ORDER BY
           CASE WHEN COUNT(DISTINCT recipe_ingredients.id) = 0 THEN 1 ELSE 0 END,
           COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END) DESC,
           (COUNT(DISTINCT recipe_ingredients.id) - COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END)) ASC
-        LIMIT #{@limit}
-        OFFSET #{@offset}
+        LIMIT ?
+        OFFSET ?
       SQL
 
-      results = ActiveRecord::Base.connection.execute(sql)
+      # Use sanitize_sql_array to safely bind parameters
+      safe_sql = ActiveRecord::Base.sanitize_sql_array([ sql, user_id, limit_value, offset_value ])
+      results = ActiveRecord::Base.connection.execute(safe_sql)
       return [] if results.count == 0
 
       # Build Recipe objects with precalculated scores
@@ -67,9 +74,5 @@ module Recipes
     private
 
     attr_reader :user, :limit, :offset
-
-    def sanitize_user_id
-      ActiveRecord::Base.connection.quote(user.id)
-    end
   end
 end
