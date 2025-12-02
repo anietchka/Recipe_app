@@ -388,6 +388,61 @@ class RecipeTest < ActiveSupport::TestCase
     assert_equal 2.0, eggs_missing[:missing_quantity]
   end
 
+  test "missing_ingredients_for handles unit conversion for weight units" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    recipe = Recipe.create!(title: "Pasta Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "1 kg pasta", quantity: 1.0, unit: "kg")
+
+    # User has 500g of pasta, needs 1kg (1000g)
+    PantryItem.create!(user: user, ingredient: pasta, quantity: 500.0, unit: "g")
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    pasta_missing = missing.find { |m| m[:ingredient_id] == pasta.id }
+    assert_not_nil pasta_missing
+    # 1kg = 1000g, user has 500g, missing 500g = 0.5kg = 1/2 kg
+    assert_equal 0, pasta_missing[:missing_quantity]
+    assert_equal "1/2", pasta_missing[:missing_fraction]
+    assert_equal "kg", pasta_missing[:recipe_ingredient].unit
+  end
+
+  test "missing_ingredients_for handles unit conversion for volume units" do
+    user = User.create!(email: "demo@example.com")
+    milk = Ingredient.create!(name: "Milk", canonical_name: "milk")
+
+    recipe = Recipe.create!(title: "Cake")
+    RecipeIngredient.create!(recipe: recipe, ingredient: milk, original_text: "500ml milk", quantity: 500.0, unit: "ml")
+
+    # User has 0.5l of milk, needs 500ml
+    PantryItem.create!(user: user, ingredient: milk, quantity: 0.5, unit: "l")
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 0, missing.count # 0.5l = 500ml, sufficient
+  end
+
+  test "cook! handles unit conversion when decrementing" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    recipe = Recipe.create!(title: "Pasta Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "500g pasta", quantity: 500.0, unit: "g")
+
+    # User has 1kg of pasta
+    pantry_item = PantryItem.create!(user: user, ingredient: pasta, quantity: 1.0, unit: "kg")
+
+    recipe.cook!(user)
+
+    pantry_item.reload
+    # 1kg = 1000g, used 500g, remaining 500g = 0.5kg = 1/2 kg
+    assert_equal 0.0, pantry_item.quantity
+    assert_equal "1/2", pantry_item.fraction
+    assert_equal "kg", pantry_item.unit
+  end
+
   test "missing_ingredients_for returns empty array when user has sufficient quantities" do
     user = User.create!(email: "demo@example.com")
     pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")

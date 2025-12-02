@@ -222,4 +222,37 @@ class PantryItemTest < ActiveSupport::TestCase
     # 2 + 0.75 = 2.75
     assert_equal 2.75, pantry_item.available_quantity
   end
+
+  test "should accept valid unit from MEASUREMENT_UNITS" do
+    Ingredient::MEASUREMENT_UNITS.each do |unit|
+      pantry_item = PantryItem.new(
+        user: @user,
+        ingredient: @ingredient,
+        quantity: 100.0,
+        unit: unit
+      )
+      assert pantry_item.valid?, "Unit #{unit} should be valid"
+    end
+  end
+
+  test "should reject invalid unit" do
+    pantry_item = PantryItem.new(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: 100.0,
+      unit: "invalid_unit"
+    )
+    assert_not pantry_item.valid?
+    assert_includes pantry_item.errors[:unit], I18n.t("errors.messages.inclusion")
+  end
+
+  test "should accept nil unit" do
+    pantry_item = PantryItem.new(
+      user: @user,
+      ingredient: @ingredient,
+      quantity: 100.0,
+      unit: nil
+    )
+    assert pantry_item.valid?
+  end
 end

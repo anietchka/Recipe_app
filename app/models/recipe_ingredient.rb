@@ -4,6 +4,7 @@ class RecipeIngredient < ApplicationRecord
 
   validates :recipe, presence: true
   validates :ingredient, presence: true
+  validates :unit, inclusion: { in: Ingredient::MEASUREMENT_UNITS }, allow_nil: true
 
   # Returns the total required quantity for this recipe ingredient
   # Combines quantity and fraction, defaulting to 1.0 if both are nil/blank
