@@ -27,9 +27,9 @@ class RecipesRakeTest < ActiveSupport::TestCase
     FileUtils.mkdir_p(default_path.dirname) unless default_path.dirname.exist?
     FileUtils.cp(temp_file.path, default_path)
 
-    assert_difference -> { Recipe.count }, 3 do
-      assert_difference -> { Ingredient.count }, 10 do
-        assert_difference -> { RecipeIngredient.count }, 11 do
+    assert_difference -> { Recipe.count }, 4 do
+      assert_difference -> { Ingredient.count }, 20 do
+        assert_difference -> { RecipeIngredient.count }, 24 do
           Rake::Task["recipes:import"].invoke
         end
       end
@@ -42,9 +42,9 @@ class RecipesRakeTest < ActiveSupport::TestCase
   test "imports recipes from custom file path" do
     fixture_path = Rails.root.join("test", "fixtures", "files", "recipes_minimal.json")
 
-    assert_difference -> { Recipe.count }, 3 do
-      assert_difference -> { Ingredient.count }, 10 do
-        assert_difference -> { RecipeIngredient.count }, 11 do
+    assert_difference -> { Recipe.count }, 4 do
+      assert_difference -> { Ingredient.count }, 20 do
+        assert_difference -> { RecipeIngredient.count }, 24 do
           Rake::Task["recipes:import"].invoke(fixture_path.to_s)
         end
       end

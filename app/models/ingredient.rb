@@ -1,6 +1,4 @@
 class Ingredient < ApplicationRecord
-  include UnitNormalizer
-
   # Common measurement units used in recipes
   MEASUREMENT_UNITS = %w[
     g kg mg ml l cl dl oz lb
@@ -16,6 +14,46 @@ class Ingredient < ApplicationRecord
   has_many :pantry_items, dependent: :destroy
 
   validates :canonical_name, presence: true, uniqueness: true
+
+  # Autocomplete search for ingredients with smart filtering and ordering
+  # Filters out overly complex names and prioritizes simple, relevant results
+  #
+  # @param term [String] Search term
+  # @param limit [Integer] Maximum number of results (default: 15)
+  # @return [ActiveRecord::Relation] Ingredients matching the search
+  def self.autocomplete(term, limit: 15)
+    return none if term.blank?
+
+    normalized_term = term.strip.downcase
+    return none if normalized_term.blank?
+
+    # Sanitize the term for SQL LIKE patterns (escape special characters)
+    sanitized_term = ActiveRecord::Base.connection.quote_string(normalized_term)
+
+    # Build the subquery with filtering and calculated columns
+    subquery = where(
+      "LOWER(name) LIKE ? OR LOWER(canonical_name) LIKE ?",
+      "%#{sanitized_term}%",
+      "%#{sanitized_term}%"
+    )
+    .where("LENGTH(name) <= ?", 40)
+    .where("LOWER(name) NOT LIKE ?", "%such as to %")
+    .where("name NOT LIKE ?", "%(%")
+    .select(
+      "ingredients.*",
+      Arel.sql("CASE
+        WHEN LOWER(name) LIKE '#{sanitized_term}%' OR LOWER(canonical_name) LIKE '#{sanitized_term}%'
+        THEN 1
+        ELSE 2
+      END AS relevance_rank"),
+      Arel.sql("LENGTH(name) AS name_length")
+    )
+
+    # Use from with subquery to make calculated columns available for ordering
+    from("(#{subquery.to_sql}) AS ingredients")
+      .order(Arel.sql("relevance_rank ASC, name_length ASC, name ASC"))
+      .limit(limit)
+  end
 
   # Canonicalize a string to a normalized form
   # - converts to lowercase

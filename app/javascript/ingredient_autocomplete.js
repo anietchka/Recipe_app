@@ -1,5 +1,12 @@
 // Ingredient autocomplete functionality
 (function() {
+  let timeoutId = null;
+  let selectedIndex = -1;
+  let inputHandler = null;
+  let blurHandler = null;
+  let keydownHandler = null;
+  let clickHandler = null;
+
   function initAutocomplete() {
     const input = document.getElementById('ingredient-name-input');
     const suggestions = document.getElementById('ingredient-suggestions');
@@ -9,8 +16,30 @@
     const searchUrl = input.dataset.searchUrl;
     if (!searchUrl) return;
 
-    let timeoutId = null;
-    let selectedIndex = -1;
+    // Remove old event listeners if they exist (using stored handlers)
+    if (input.dataset.autocompleteInitialized === 'true') {
+      if (inputHandler) {
+        input.removeEventListener('input', inputHandler);
+      }
+      if (blurHandler) {
+        input.removeEventListener('blur', blurHandler);
+      }
+      if (keydownHandler) {
+        input.removeEventListener('keydown', keydownHandler);
+      }
+      if (clickHandler) {
+        document.removeEventListener('click', clickHandler);
+      }
+      // Clear handlers to allow new ones to be created
+      inputHandler = null;
+      blurHandler = null;
+      keydownHandler = null;
+      clickHandler = null;
+    }
+
+    // Reset state
+    timeoutId = null;
+    selectedIndex = -1;
 
     function hideSuggestions() {
       suggestions.classList.add('hidden');
@@ -54,7 +83,8 @@
         });
     }
 
-    input.addEventListener('input', function(e) {
+    // Create handler functions and store references
+    inputHandler = function(e) {
       clearTimeout(timeoutId);
       const query = e.target.value.trim();
 
@@ -66,14 +96,14 @@
       timeoutId = setTimeout(() => {
         searchIngredients(query);
       }, 300);
-    });
+    };
 
-    input.addEventListener('blur', function() {
+    blurHandler = function() {
       // Delay hiding to allow click on suggestion
       setTimeout(hideSuggestions, 200);
-    });
+    };
 
-    input.addEventListener('keydown', function(e) {
+    keydownHandler = function(e) {
       const items = suggestions.querySelectorAll('.suggestion-item');
 
       if (items.length === 0) return;
@@ -99,21 +129,29 @@
       } else if (e.key === 'Escape') {
         hideSuggestions();
       }
-    });
+    };
 
-    // Hide suggestions when clicking outside
-    document.addEventListener('click', function(e) {
+    clickHandler = function(e) {
       if (!input.contains(e.target) && !suggestions.contains(e.target)) {
         hideSuggestions();
       }
-    });
+    };
+
+    // Add event listeners
+    input.addEventListener('input', inputHandler);
+    input.addEventListener('blur', blurHandler);
+    input.addEventListener('keydown', keydownHandler);
+    document.addEventListener('click', clickHandler);
+
+    // Mark as initialized
+    input.dataset.autocompleteInitialized = 'true';
   }
 
-  // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAutocomplete);
-  } else {
-    initAutocomplete();
-  }
+  // Don't initialize on page load - wait for modal to open
+  // This prevents attaching listeners when modal is hidden
+  // The modal.js will call initAutocomplete when opening
+
+  // Make function globally available
+  window.initAutocomplete = initAutocomplete;
 })();
 

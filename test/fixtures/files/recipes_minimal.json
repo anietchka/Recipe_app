@@ -9,10 +9,10 @@
     "rating": 4.5,
     "ratings_count": 100,
     "ingredients": [
-      "200g pasta",
-      "2 eggs",
-      "100 g parmesan cheese",
-      "1.5 cups flour"
+      "200g pasta, finely chopped",
+      "2 eggs, only yellow, beaten",
+      "100 g parmesan cheese, grated",
+      "1.5 cups flour, sifted"
     ]
   },
   {
@@ -37,6 +37,25 @@
       "1 ½ cups flour",
       "⅓ teaspoon salt",
       "2 ⅔ tablespoons oil"
+    ]
+  },
+  {
+    "title": "Parenthetical Quantities Test",
+    "description": "Test recipe for parenthetical quantities and pound/ounce units",
+    "ingredients": [
+      "3 (12 ounce) packages refrigerated biscuit dough",
+      "1 (12 fluid ounce) can or bottle beer",
+      "(12 ounce) packages refrigerated biscuit dough",
+      "(12 fluid ounce) can or bottle beer",
+      "2 (1 pound) packages ground beef",
+      "1 pound ground beef",
+      "2 pounds chicken",
+      "8 ounce cheese",
+      "12 ounces flour",
+      "1 fluid ounce vanilla",
+      "16 fluid ounces milk",
+      "(3.5 ounce) package instant vanilla pudding mix",
+      "(.25 ounce) package active dry yeast"
     ]
   }
 ]
