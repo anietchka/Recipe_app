@@ -1,0 +1,58 @@
+<!-- Header with image -->
+<div class="recipe-show-header">
+  <div class="recipe-show-image">
+    <% if @recipe_presenter.has_image_url? %>
+      <%= image_tag @recipe_presenter.image_url, alt: @recipe_presenter.title, class: "recipe-show-image__img", onerror: "this.onerror=null; this.src='#{image_path('dan-gold-5O1ddenSM4g-unsplash.jpg')}';" %>
+    <% else %>
+      <%= image_tag "dan-gold-5O1ddenSM4g-unsplash.jpg", alt: @recipe_presenter.title, class: "recipe-show-image__img" %>
+    <% end %>
+  </div>
+
+  <!-- Title and meta info -->
+  <div class="recipe-show-title-section">
+    <h1 class="recipe-show-title"><%= @recipe_presenter.title %></h1>
+
+    <div class="recipe-show-meta">
+      <% if @recipe_presenter.has_time_info? %>
+        <span class="recipe-show-meta__item">
+          <% if @recipe_presenter.prep_time.present? %>
+            <%= t("recipes.show.prep_time", minutes: @recipe_presenter.prep_time) %>
+          <% end %>
+
+          <% if @recipe_presenter.has_prep_time? %>
+            <span class="recipe-show-meta__separator">•</span>
+          <% end %>
+
+          <% if @recipe_presenter.has_cook_time? %>
+            <%= t("recipes.show.cook_time", minutes: @recipe_presenter.cook_time) %>
+          <% end %>
+        </span>
+      <% end %>
+
+      <% if @recipe_presenter.has_ratings? %>
+        <span class="recipe-show-meta__item">
+          <span class="recipe-show-meta__separator">•</span> ⭐
+          <%= @recipe_presenter.ratings.round(1) %>
+        </span>
+      <% end %>
+
+      <% if @recipe_presenter.has_category? %>
+        <span class="recipe-show-meta__item">
+          <span class="recipe-show-meta__separator">•</span>
+          <%= @recipe_presenter.category %>
+        </span>
+      <% end %>
+    </div>
+
+    <!-- Availability badge -->
+    <div class="recipe-show-availability">
+      <span class="recipe-show-availability__text">
+        <%= t("recipes.show.availability_text", matched: @recipe_presenter.matched_ingredients, total: @recipe_presenter.total_ingredients_count, missing: @recipe_presenter.missing_count) %>
+      </span>
+
+      <span class="recipe-show-availability__badge <%= @recipe_presenter.status_class %>">
+        <%= @recipe_presenter.status_text %>
+      </span>
+    </div>
+  </div>
+</div>

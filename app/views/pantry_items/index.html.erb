@@ -1,12 +1,10 @@
 <h1><%= t(".title") %></h1>
 
-<div class="actions-header">
-  <button type="button" class="btn" onclick="openModal()">
-    <%= t(".add_ingredient_button") %>
-  </button>
-
-  <%= link_to t(".find_recipes_button"), recipes_path, class: "btn" %>
-</div>
+<% if @pantry_items_presenter.empty? %>
+  <%= render "onboarding" %>
+<% else %>
+  <%= render "header" %>
+  <%= render "pantry_items" %>
+<% end %>
 
 <%= render "form" %>
-<%= render "list" %>

@@ -74,8 +74,42 @@
     initFormSubmit();
   }
 
+  function openModalWithIngredient(ingredientName) {
+    const modal = document.getElementById('add-form-modal');
+    const input = document.getElementById('ingredient-name-input');
+    
+    if (modal && input) {
+      // Reset form first
+      const form = document.getElementById('pantry-item-form');
+      if (form) {
+        form.reset();
+      }
+      
+      // Set ingredient name
+      input.value = ingredientName;
+      
+      // Open modal
+      modal.classList.remove('hidden');
+      
+      // Initialize autocomplete when modal opens
+      if (typeof window.initAutocomplete === 'function') {
+        setTimeout(() => {
+          window.initAutocomplete();
+        }, 100);
+      }
+      
+      // Focus on ingredient input after modal is shown
+      setTimeout(() => {
+        input.focus();
+        // Move cursor to end
+        input.setSelectionRange(input.value.length, input.value.length);
+      }, 200);
+    }
+  }
+
   // Make functions globally available
   window.resetAndCloseModal = resetAndCloseModal;
   window.openModal = openModal;
+  window.openModalWithIngredient = openModalWithIngredient;
 })();
 

@@ -1,0 +1,11 @@
+<% if @pantry_items_presenter.any? %>
+  <div class="pantry-grid">
+    <% @pantry_items_presenter.each do |pantry_item| %>
+      <%= render "pantry_item", pantry_item: pantry_item %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="empty-state">
+    <p><%= t("pantry_items.index.empty_pantry") %></p>
+  </div>
+<% end %>

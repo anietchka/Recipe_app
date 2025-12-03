@@ -1,0 +1,58 @@
+<div class="recipe-show-ingredients-column">
+  <h3
+    class="
+      recipe-show-ingredients-column__title
+      recipe-show-ingredients-column__title--missing
+    "
+  >
+    <%= t("recipes.show.missing_ingredients_title") %>
+  </h3>
+
+  <ul class="recipe-show-ingredients-list recipe-show-ingredients-list--shopping">
+    <% if @recipe_presenter.missing_ingredients.any? %>
+      <% @recipe_presenter.missing_ingredients.each do |missing_info| %>
+        <% recipe_ingredient = missing_info[:recipe_ingredient]
+           pantry_item = PantryItem.find_by(user: current_user, ingredient: recipe_ingredient.ingredient) %>
+
+        <li class="recipe-show-ingredient-item recipe-show-ingredient-item--missing">
+          <input
+            type="checkbox"
+            class="recipe-show-ingredient-item__checkbox"
+            id="ingredient-<%= recipe_ingredient.ingredient_id %>"
+          >
+
+          <label
+            for="ingredient-<%= recipe_ingredient.ingredient_id %>"
+            class="recipe-show-ingredient-item__label"
+          >
+            <div class="recipe-show-ingredient-item__content">
+              <div class="recipe-show-ingredient-item__name">
+                <strong><%= recipe_ingredient.ingredient.name %></strong>
+              </div>
+
+              <div class="recipe-show-ingredient-item__details">
+                <%= t("recipes.show.recipe_requires", quantity: @recipe_presenter.format_ingredient_quantity(recipe_ingredient)) %>
+
+                <span class="recipe-show-ingredient-item__separator"> • </span>
+
+                <% if missing_info[:missing_quantity].present? || missing_info[:missing_fraction].present? %>
+                  <span class="recipe-show-ingredient-item__missing-text">
+                    <%= t("recipes.show.missing_quantity", quantity: @recipe_presenter.format_missing_quantity(missing_info)) %>
+                  </span>
+                <% else %>
+                  <span class="recipe-show-ingredient-item__missing-text">
+                    <%= t("recipes.show.no_ingredient") %>
+                  </span>
+                <% end %>
+              </div>
+            </div>
+          </label>
+        </li>
+      <% end %>
+    <% else %>
+      <li class="recipe-show-ingredient-item recipe-show-ingredient-item--empty">
+        <%= t("recipes.show.no_missing_ingredients") %>
+      </li>
+    <% end %>
+  </ul>
+</div>
