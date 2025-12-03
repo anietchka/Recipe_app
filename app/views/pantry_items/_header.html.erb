@@ -1,7 +1,7 @@
 <!-- Normal view when pantry has items -->
 <div class="pantry-header">
   <p class="pantry-header-text">
-    <%= raw(@pantry_items_presenter.text_header.gsub(/(\d+)/, '<strong>\1</strong>')) %>
+    <%= sanitize(@pantry_items_presenter.text_header.gsub(/(\d+)/, '<strong>\1</strong>'), tags: ['strong']) %>
   </p>
 
   <div class="pantry-header-actions">
