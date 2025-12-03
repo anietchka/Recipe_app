@@ -13,60 +13,33 @@ module Recipes
       @offset = offset
     end
 
+    # Main entry point:
+    # returns a list of Recipe records, each enriched with:
+    # - @total_ingredients_count
+    # - @matched_ingredients_count
+    # - @missing_ingredients_count
+    #
+    # These instance variables are later read in views via helpers or
+    # small methods on the Recipe model (e.g. recipe.total_ingredients_count).
     def call
-      # Sanitize inputs to prevent SQL injection
-      user_id = user.id.to_i
-      limit_value = @limit.to_i
-      offset_value = @offset.to_i
+      rows = Recipe.find_by_sql([ sql_query, user.id, limit, offset ])
 
-      sql = <<-SQL.squish
-        SELECT#{' '}
-          recipes.id,
-          recipes.title,
-          recipes.cook_time,
-          recipes.prep_time,
-          recipes.image_url,
-          recipes.category,
-          recipes.ratings,
-          recipes.created_at,
-          recipes.updated_at,
-          COUNT(DISTINCT recipe_ingredients.id) AS total_ingredients_count,
-          COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END) AS matched_ingredients_count,
-          (COUNT(DISTINCT recipe_ingredients.id) - COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END)) AS missing_ingredients_count
-        FROM recipes
-        LEFT JOIN recipe_ingredients ON recipe_ingredients.recipe_id = recipes.id
-        LEFT JOIN ingredients ON ingredients.id = recipe_ingredients.ingredient_id
-        LEFT JOIN pantry_items ON pantry_items.ingredient_id = ingredients.id AND pantry_items.user_id = ?
-        GROUP BY recipes.id
-        ORDER BY
-          CASE WHEN COUNT(DISTINCT recipe_ingredients.id) = 0 THEN 1 ELSE 0 END,
-          COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END) DESC,
-          (COUNT(DISTINCT recipe_ingredients.id) - COUNT(DISTINCT CASE WHEN pantry_items.id IS NOT NULL THEN recipe_ingredients.id END)) ASC
-        LIMIT ?
-        OFFSET ?
-      SQL
-
-      # Use sanitize_sql_array to safely bind parameters
-      safe_sql = ActiveRecord::Base.sanitize_sql_array([ sql, user_id, limit_value, offset_value ])
-      results = ActiveRecord::Base.connection.execute(safe_sql)
-      return [] if results.count == 0
-
-      # Build Recipe objects with precalculated scores
-      results.to_a.map do |row|
-        recipe = Recipe.new(
-          id: row["id"],
-          title: row["title"],
-          cook_time: row["cook_time"],
-          prep_time: row["prep_time"],
-          image_url: row["image_url"],
-          category: row["category"],
-          ratings: row["ratings"],
-          created_at: row["created_at"],
-          updated_at: row["updated_at"]
+      rows.map do |recipe|
+        # Extra columns come back as attributes on the AR object.
+        # We store them in instance variables so that the Recipe model
+        # can expose them via simple readers.
+        recipe.instance_variable_set(
+          :@total_ingredients_count,
+          recipe["total_ingredients_count"].to_i
         )
-        recipe.instance_variable_set(:@total_ingredients_count, row["total_ingredients_count"].to_i)
-        recipe.instance_variable_set(:@matched_ingredients_count, row["matched_ingredients_count"].to_i)
-        recipe.instance_variable_set(:@missing_ingredients_count, row["missing_ingredients_count"].to_i)
+        recipe.instance_variable_set(
+          :@matched_ingredients_count,
+          recipe["matched_ingredients_count"].to_i
+        )
+        recipe.instance_variable_set(
+          :@missing_ingredients_count,
+          recipe["missing_ingredients_count"].to_i
+        )
         recipe
       end
     end
@@ -74,5 +47,58 @@ module Recipes
     private
 
     attr_reader :user, :limit, :offset
+
+    # Single SQL query that:
+    # - starts from recipes
+    # - joins all recipe_ingredients for each recipe
+    # - LEFT JOINs the current user's pantry_items on ingredient_id
+    #
+    # Because both RecipeIngredient and PantryItem reference Ingredient records
+    # that were created using Ingredient.canonicalize, matching on ingredient_id
+    # effectively means "match on canonical_name".
+    #
+    # For each recipe we compute:
+    # - total_ingredients_count: how many ingredients the recipe needs
+    # - matched_ingredients_count: how many of those are present in the user's pantry
+    # - missing_ingredients_count: total - matched
+    #
+    # Then we order:
+    # - recipes with more matches first (best fit),
+    # - for equal matches, fewer missing ingredients first,
+    # - finally by recipe id for stable ordering.
+    def sql_query
+      <<~SQL
+        SELECT
+          recipes.*,
+          COUNT(DISTINCT ri_all.id) AS total_ingredients_count,
+          COUNT(
+            DISTINCT
+            CASE
+              WHEN pi.id IS NOT NULL THEN ri_all.id
+              ELSE NULL
+            END
+          ) AS matched_ingredients_count,
+          COUNT(DISTINCT ri_all.id)
+            - COUNT(
+                DISTINCT
+                CASE
+                  WHEN pi.id IS NOT NULL THEN ri_all.id
+                  ELSE NULL
+                END
+              ) AS missing_ingredients_count
+        FROM recipes
+        JOIN recipe_ingredients AS ri_all
+          ON ri_all.recipe_id = recipes.id
+        LEFT JOIN pantry_items AS pi
+          ON pi.ingredient_id = ri_all.ingredient_id
+         AND pi.user_id = ?
+        GROUP BY recipes.id
+        ORDER BY
+          matched_ingredients_count DESC,
+          missing_ingredients_count ASC,
+          recipes.id ASC
+        LIMIT ? OFFSET ?
+      SQL
+    end
   end
 end

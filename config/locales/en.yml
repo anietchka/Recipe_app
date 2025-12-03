@@ -123,10 +123,11 @@ en:
       cook_hint: "Your pantry will be updated automatically."
       go_to_pantry: "Go to Pantry"
       recipe_requires: "Recipe: %{quantity}"
-      your_pantry_has: "Your pantry: %{quantity}"
+      your_pantry_has: "In your pantry: %{quantity}"
       missing_quantity: "Missing: %{quantity}"
       no_ingredient: "You don't have this ingredient"
       no_quantity: "no quantity"
+      present: "present"
     cook:
       success: "Recipe cooked successfully! Your pantry has been updated."
       error: "Failed to cook recipe. Please try again."

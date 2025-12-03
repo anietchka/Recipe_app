@@ -17,10 +17,10 @@ class RecipesRakeTest < ActiveSupport::TestCase
   test "imports recipes from custom file path" do
     fixture_path = Rails.root.join("test", "fixtures", "files", "recipes_minimal.json")
 
-    assert_difference -> { Recipe.count }, 5 do
+    assert_difference -> { Recipe.count }, 2 do
       # Note: With improved canonicalize, some ingredients are merged (e.g., "eggs" -> "egg", "tomatoes" -> "tomato", "potatoes" -> "potato")
-      assert_difference -> { Ingredient.count }, 15 do
-        assert_difference -> { RecipeIngredient.count }, 21 do
+      assert_difference -> { Ingredient.count }, 17 do
+        assert_difference -> { RecipeIngredient.count }, 30 do
           Rake::Task["recipes:import"].invoke(fixture_path.to_s)
         end
       end

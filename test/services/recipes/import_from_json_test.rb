@@ -214,7 +214,7 @@ class Recipes::ImportFromJsonTest < ActiveSupport::TestCase
     assert_equal "egg", eggs_ri.ingredient.canonical_name
     assert_equal 2, eggs_ri.quantity
     assert_nil eggs_ri.fraction
-    assert_equal "pcs", eggs_ri.unit #when quantity is present and no unit is present, pcs is implicit
+    assert_equal "pcs", eggs_ri.unit # when quantity is present and no unit is present, pcs is implicit
 
     # Test case 20: "100 g parmesan cheese, grated" -> canonical_name: "cheese"
     cheese_ri = test_recipe.recipe_ingredients.find_by(original_text: "100 g parmesan cheese, grated")
@@ -241,7 +241,7 @@ class Recipes::ImportFromJsonTest < ActiveSupport::TestCase
     assert_equal "potato", potatoes_ri.ingredient.canonical_name
     assert_equal 2, potatoes_ri.quantity
     assert_nil potatoes_ri.fraction
-    assert_equal "pcs", potatoes_ri.unit #when quantity is present and no unit is present, pcs is implicit
+    assert_equal "pcs", potatoes_ri.unit # when quantity is present and no unit is present, pcs is implicit
 
     # Test case 23: "1 ½ cups all-purpose flour, sifted" -> canonical_name: "flour"
     flour_ri = test_recipe.recipe_ingredients.find_by(original_text: "1 ½ cups all-purpose flour, sifted")
