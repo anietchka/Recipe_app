@@ -1,16 +1,39 @@
 [
   {
-    "title": "Simple Pasta",
-    "cook_time": 10,
+    "title": "Test Recipe",
+    "cook_time": 20,
     "prep_time": 5,
-    "image_url": "https://example.com/pasta.jpg",
-    "category": "Italian",
-    "ratings": 4.5,
+    "image_url": null,
+    "category": "Test",
+    "ratings": 4.0,
     "ingredients": [
+      "fresh basil",
+      "chopped onions",
+      "small tomatoes, diced",
+      "ground beef",
+      "finely chopped parsley",
+      "1 cup warm milk",
+      "boneless skinless chicken breast, with no bones or skin",
+      "refrigerated biscuit dough",
+      "½ cup lukewarm water",
+      "(.25 ounce) package active dry yeast",
+      "3 (12 ounce) packages refrigerated biscuit dough",
+      "(12 ounce) packages refrigerated biscuit dough",
+      "2 (1 pound) packages ground beef",
+      "1 pound ground beef",
+      "2 pounds chicken",
+      "8 ounce cheese",
+      "12 ounces flour",
       "200g pasta, finely chopped",
       "2 eggs, only yellow, beaten",
       "100 g parmesan cheese, grated",
-      "1.5 cups flour, sifted"
+      "1.5 cups flour, sifted",
+      "2 large potatoes, peeled and thinly sliced",
+      "1 ½ cups all-purpose flour, sifted",
+      "⅓ teaspoon salt",
+      "2 ⅔ tablespoons oil, sifted",
+      "1L milk",
+      "2l water"
     ]
   },
   {
@@ -24,50 +47,6 @@
       "3 tomatoes",
       "fresh basil",
       "olive oil"
-    ]
-  },
-  {
-    "title": "Test Recipe",
-    "cook_time": 15,
-    "prep_time": 5,
-    "image_url": null,
-    "category": null,
-    "ratings": null,
-    "ingredients": [
-      "½ cup water",
-      "1 ½ cups flour",
-      "⅓ teaspoon salt",
-      "2 ⅔ tablespoons oil"
-    ]
-  },
-  {
-    "title": "Parenthetical Quantities Test",
-    "cook_time": 30,
-    "prep_time": 15,
-    "image_url": null,
-    "category": "Baking",
-    "ratings": 3.8,
-    "ingredients": [
-      "3 (12 ounce) packages refrigerated biscuit dough",
-      "(12 ounce) packages refrigerated biscuit dough",
-      "2 (1 pound) packages ground beef",
-      "1 pound ground beef",
-      "2 pounds chicken",
-      "8 ounce cheese",
-      "12 ounces flour",
-      "(3.5 ounce) package instant vanilla pudding mix",
-      "(.25 ounce) package active dry yeast"
-    ]
-  },
-  {
-    "title": "Large Potatoes Test",
-    "cook_time": 30,
-    "prep_time": 10,
-    "image_url": null,
-    "category": "Vegetables",
-    "ratings": 4.0,
-    "ingredients": [
-      "2 large potatoes, peeled and thinly sliced"
     ]
   }
 ]

@@ -29,7 +29,7 @@ class PantryItemsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to pantry_items_url
-    assert_equal "eggs", PantryItem.last.ingredient.canonical_name
+    assert_equal "egg", PantryItem.last.ingredient.canonical_name
   end
 
   test "should create ingredient if it doesn't exist" do
@@ -44,7 +44,8 @@ class PantryItemsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to pantry_items_url
-    ingredient = Ingredient.find_by(canonical_name: "new ingredient")
+    # Note: new canonicalize takes last word as root, so "New Ingredient" -> "ingredient"
+    ingredient = Ingredient.find_by(canonical_name: "ingredient")
     assert_not_nil ingredient
     assert_equal "New Ingredient", ingredient.name
   end

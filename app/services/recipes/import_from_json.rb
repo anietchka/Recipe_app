@@ -1,6 +1,8 @@
 module Recipes
   class ImportFromJson
     include FractionConverter
+    include UnitNormalizer
+
     def self.call(file_path = nil)
       new(file_path).call
     end
@@ -18,34 +20,34 @@ module Recipes
 
     private
 
-    attr_reader :file_path
-
+    # Default JSON file location used in production import
     def default_file_path
       Rails.root.join("db", "data", "recipes-en.json")
     end
 
     def load_json_file
-      unless File.exist?(file_path)
-        error_msg = "File not found: #{file_path}. Run 'rails recipes:download' to download it from S3."
+      unless File.exist?(@file_path)
+        error_msg = "File not found: #{@file_path}. Run 'rails recipes:download' to download it from S3."
         Rails.logger.error error_msg
         raise Errno::ENOENT, error_msg
       end
 
-      file_content = File.read(file_path)
+      file_content = File.read(@file_path)
       JSON.parse(file_content)
     rescue JSON::ParserError => e
       Rails.logger.error "Failed to parse JSON file: #{e.message}"
       raise
     end
 
+    # Recipe import
     def import_recipe(recipe_data)
       recipe = Recipe.create!(
-        title: recipe_data["title"],
-        cook_time: recipe_data["cook_time"],
-        prep_time: recipe_data["prep_time"],
-        image_url: recipe_data["image_url"] || recipe_data["image"],
-        category: recipe_data["category"],
-        ratings: recipe_data["ratings"]
+        title:      recipe_data["title"],
+        cook_time:  recipe_data["cook_time"],
+        prep_time:  recipe_data["prep_time"],
+        image_url:  recipe_data["image_url"] || recipe_data["image"],
+        category:   recipe_data["category"],
+        ratings:    recipe_data["ratings"]
       )
 
       import_ingredients(recipe, recipe_data["ingredients"] || [])
@@ -57,258 +59,232 @@ module Recipes
       end
     end
 
+    # Single ingredient line import
     def import_ingredient(recipe, ingredient_text)
       parsed = parse_ingredient(ingredient_text)
-      ingredient_name = parsed[:name]
-      quantity = parsed[:quantity]
-      fraction = parsed[:fraction]
-      unit = parsed[:unit]
-      precision = parsed[:precision]
 
-      canonical_name = Ingredient.canonicalize(ingredient_name)
+      canonical_name = Ingredient.canonicalize(parsed[:name])
       return if canonical_name.blank?
 
-      ingredient = Ingredient.find_or_create_by!(canonical_name: canonical_name) do |ing|
-        ing.name = ingredient_name
-      end
+      ingredient = Ingredient.find_or_initialize_by(canonical_name: canonical_name)
+      ingredient.name = canonical_name.titleize
+      ingredient.save!
 
-      # Update ingredient name if it was changed (e.g., if it previously had quantity/unit in name)
-      ingredient.update(name: ingredient_name) if ingredient.name != ingredient_name
+      quantity = parsed[:quantity]
+      fraction = parsed[:fraction]
+      unit     = parsed[:unit]
+
+      # When a quantity is present but no unit is specified, we assume a piece count ("pcs").
+      unit = "pcs" if quantity.present? && unit.nil?
 
       RecipeIngredient.create!(
-        recipe: recipe,
-        ingredient: ingredient,
+        recipe:        recipe,
+        ingredient:    ingredient,
         original_text: ingredient_text,
-        quantity: quantity,
-        fraction: fraction,
-        unit: unit,
-        precision: precision
+        quantity:      quantity,
+        fraction:      fraction,
+        unit:          unit
       )
     end
 
-    # Parses ingredient text and extracts quantity, fraction, unit, name, and precision in a single pass
-    # Returns a hash with :quantity, :fraction, :unit, :name, and :precision
-    # Precision is everything after the first comma in the ingredient name
+    # Parsing helpers
     def parse_ingredient(ingredient_text)
-      normalized = FractionConverter.normalize_fractions(ingredient_text.dup)
-      text = normalized.strip
+      text = ingredient_text.to_s.strip
+      text = FractionConverter.normalize_fractions(text).squish
 
-      # First, try to match quantities in parentheses (e.g., "3 (12 ounce) packages")
-      parenthetical_match = match_parenthetical_pattern(text)
-      if parenthetical_match
-        return parse_parenthetical_match(parenthetical_match, text, ingredient_text)
-      end
+      # 1. Handle parenthetical patterns first (e.g. "(.25 ounce)", "3 (12 ounce) ...")
+      parenthetical_result = parse_parenthetical(text, ingredient_text)
+      return parenthetical_result if parenthetical_result.present?
 
-      match = match_ingredient_pattern(text)
-      return build_empty_parsed_result(ingredient_text) unless match
-
-      whole_number_text, fraction_text, unit = extract_matched_parts(match)
-
-      # Handle edge case: Unicode fractions that normalize incorrectly
-      whole_number_text, fraction_text, unit = handle_fraction_edge_case(
-        text, whole_number_text, fraction_text, unit
-      )
-
-      quantity, fraction_text = calculate_quantity_and_fraction(whole_number_text, fraction_text)
-      ingredient_name, precision = extract_ingredient_name_and_precision(text, match, ingredient_text)
-
-      {
-        quantity: quantity,
-        fraction: fraction_text,
-        unit: unit,
-        name: ingredient_name,
-        precision: precision
-      }
-    end
-
-    def match_parenthetical_pattern(text)
-      units_pattern = build_units_pattern
-      # Match patterns like "3 (12 ounce)", "1 (12 fluid ounce)", or "(.25 ounce)"
-      # Captures: outer quantity, inner quantity, unit
-      # Note: \d*\.?\d+ allows numbers starting with a dot (e.g., ".25")
-      regex = /^(\d*\.?\d+)?\s*\((\d*\.?\d+)\s*(#{units_pattern})\)/i
-      text.match(regex)
-    end
-
-    def parse_parenthetical_match(match, text, ingredient_text)
-      inner_quantity_text = match[2]
-      unit_text = match[3]
-
-      # Use the inner quantity and unit from parentheses
-      # Ignore the outer quantity (e.g., "3" in "3 (12 ounce)") as it's just a count of items
-      # Convert decimal to quantity and fraction if possible
-      quantity, fraction = calculate_quantity_and_fraction(inner_quantity_text, nil)
-      unit = UnitNormalizer.normalize_unit(unit_text&.downcase)
-
-      # Extract ingredient name: everything after the closing parenthesis
-      match_end = match.end(0)
-      ingredient_name_with_precision = text[match_end..-1]&.strip
-      ingredient_name_with_precision = ingredient_name_with_precision.presence || ingredient_text.strip
-
-      # Split name and precision (everything after first comma goes to precision)
-      name, precision = split_name_and_precision(ingredient_name_with_precision)
+      # 2. Fallback to standard "quantity + unit + name" parsing
+      quantity, fraction, unit, name = parse_standard_quantity_unit(text, ingredient_text)
 
       {
         quantity: quantity,
         fraction: fraction,
-        unit: unit,
-        name: name,
-        precision: precision
+        unit:     unit,
+        name:     name
       }
     end
 
-    def match_ingredient_pattern(text)
-      units_pattern = build_units_pattern
-      # Match: optional whole number, optional fraction, optional unit
-      # Use negative lookahead to prevent capturing a number that's part of a fraction
-      # Pattern: (whole_number not followed by /) followed by optional fraction, then optional unit
-      # Note: \d*\.?\d+ allows numbers starting with a dot (e.g., ".25")
-      # Unit must be:
-      #   - Preceded by a digit or space (to match "200g" but not "large")
-      #   - Followed by space, punctuation, or end of string (to prevent matching "l" in "large")
-      # Use lookbehind to ensure unit is preceded by digit/space, and lookahead to ensure it's followed by non-letter
-      regex = /^(\d*\.?\d+(?!\/))?\s*(\d+\/\d+)?\s*(?:(?<=\d|\s)(#{units_pattern})(?=\s|[^a-zA-Z]|$))?/i
-      text.match(regex)
-    end
+    # Parenthetical patterns
+    #
+    # Examples:
+    # - "(.25 ounce) package active dry yeast"
+    # - "3 (12 ounce) packages refrigerated biscuit dough"
+    # - "(12 ounce) packages refrigerated biscuit dough"
+    # - "2 (1 pound) packages ground beef"
 
-    def build_units_pattern
-      # Build pattern from MEASUREMENT_UNITS and common variations
-      base_units = Ingredient::UNITS_PATTERN_STRING
-      variations = %w[
-        cups tablespoons teaspoons pieces
-        tablespoon teaspoon piece
-        pounds pound ounces ounce
-      ].join("|")
-      "(?:#{base_units}|#{variations})"
-    end
+    def parse_parenthetical(text, ingredient_text)
+      # Look for the first "(...)" block
+      match = text.match(/\(([^)]+)\)/)
+      return nil unless match
 
-    def extract_matched_parts(match)
-      whole_number_text = match[1]&.strip.presence
-      fraction_text = match[2]
-      # Unit is captured in group 3 (inside the non-capturing group)
-      unit = match[3]&.downcase
-      normalized_unit = UnitNormalizer.normalize_unit(unit) if unit
-      [ whole_number_text, fraction_text, normalized_unit ]
-    end
+      inner = match[1].strip
+      inner_tokens = inner.split
 
-    def convert_decimal_to_fraction(decimal)
-      whole = decimal.to_i
-      decimal_part = decimal - whole
+      # Extract numeric value from inside the parenthesis
+      number_token = inner_tokens.find { |t| t.match?(/\A\d*\.?\d+\z/) }
+      return nil unless number_token
 
-      fraction = super(decimal_part)
-      return { whole: whole, fraction: fraction } if fraction
+      # Normalize values starting with ".", e.g. ".25" -> "0.25"
+      number_token = "0#{number_token}" if number_token.start_with?(".")
 
-      # If no common fraction matches, return nil to keep as decimal
-      nil
-    end
+      # Extract unit from inner tokens using UnitNormalizer
+      unit_token = inner_tokens.find { |t| UnitNormalizer.normalize_unit(t).present? }
+      unit = UnitNormalizer.normalize_unit(unit_token) if unit_token
 
-    def calculate_quantity(whole_number_text, fraction_text)
-      whole_number = whole_number_text&.to_f || 0
-      return nil if whole_number.zero? && fraction_text.nil?
+      quantity, fraction = calculate_quantity_and_fraction(number_token, nil)
 
-      whole_number.zero? ? nil : whole_number
-    end
+      # Everything after the closing parenthesis is considered the ingredient name
+      name_part = text[match.end(0)..].to_s.strip
+      # Remove everything after the first comma (precision part)
+      name_part = name_part.split(",").first&.strip if name_part.present?
+      name_part = ingredient_text.split(",").first&.strip if name_part.blank?
 
-    def build_empty_parsed_result(ingredient_text)
-      name, precision = split_name_and_precision(ingredient_text.strip)
       {
-        quantity: nil,
-        fraction: nil,
-        unit: nil,
-        name: name,
-        precision: precision
+        quantity: quantity,
+        fraction: fraction,
+        unit:     unit,
+        name:     name_part
       }
     end
 
-    def handle_fraction_edge_case(text, whole_number_text, fraction_text, unit)
-      # Handle the case where we have a whole number but no fraction, but there might be a fraction
-      # This happens with Unicode fractions like "½ cup" which normalize to " 1/2 cup"
-      # The regex might match "1" as whole_number_text instead of "1/2" as fraction_text
-      return [ whole_number_text, fraction_text, unit ] unless whole_number_text.present? && fraction_text.nil?
+    # Standard patterns
+    #
+    # Examples:
+    # - "1 cup warm milk"
+    # - "½ cup lukewarm water"
+    # - "⅓ teaspoon salt"
+    # - "1 ½ cups all-purpose flour, sifted"
+    # - "2 ⅔ tablespoons oil, sifted"
+    # - "8 ounce cheese"
+    # - "12 ounces flour"
+    # - "200g pasta, finely chopped"
+    # - "2 eggs, only yellow, beaten"
+    # - "1L milk"
+    # - "2l water"
+    # - "ground beef"
 
-      # Check if the whole_number_text is actually the numerator of a fraction like "1/2"
-      fraction_pattern = /^#{Regexp.escape(whole_number_text)}\/(\d+)/
-      return [ whole_number_text, fraction_text, unit ] unless text.match(fraction_pattern)
+    def parse_standard_quantity_unit(text, ingredient_text)
+      tokens = text.split
+      return [ nil, nil, nil, ingredient_text ] if tokens.empty?
 
-      # The whole_number_text is actually part of a fraction
-      fraction_match = text.match(/^(\d+\/\d+)/)
-      return [ whole_number_text, fraction_text, unit ] unless fraction_match
+      quantity = nil
+      fraction = nil
+      unit     = nil
+      name_start_index = 0
 
-      # Extract unit after the fraction
-      after_fraction = text[fraction_match.end(0)..-1]
-      unit = extract_unit_from_text(after_fraction)
+      first_token = tokens[0]
 
-      [ nil, fraction_match[1], unit ]
-    end
+      # Case 1: attached number + unit (e.g. "200g", "1L", "2l")
+      if first_token =~ /\A(\d+(?:\.\d+)?)([A-Za-z]+)\z/
+        number_str = Regexp.last_match(1)
+        unit_str   = Regexp.last_match(2)
 
-    def extract_unit_from_text(text)
-      return nil if text.blank?
+        quantity, fraction = calculate_quantity_and_fraction(number_str, nil)
+        unit = UnitNormalizer.normalize_unit(unit_str)
 
-      units_pattern = build_units_pattern
-      unit_match = text.strip.match(/^(#{units_pattern})/i)
-      return nil unless unit_match
-
-      UnitNormalizer.normalize_unit(unit_match[1]&.downcase)
-    end
-
-    def calculate_quantity_and_fraction(whole_number_text, fraction_text)
-      # If we have a decimal, try to convert it to fraction
-      if whole_number_text&.include?(".")
-        handle_decimal_quantity(whole_number_text, fraction_text)
+        name_start_index = 1
       else
-        quantity = calculate_quantity(whole_number_text, fraction_text)
-        [ quantity, fraction_text ]
+        # Case 2: separated quantity / fraction / unit
+        whole_number_text = nil
+        fraction_text     = nil
+
+        # Potential whole number or decimal (e.g. "1", "2", "1.5")
+        if first_token.match?(/\A\d+(?:\.\d+)?\z/)
+          whole_number_text = first_token
+          name_start_index  = 1
+
+          # Optional fraction right after whole number (e.g. "1 1/2")
+          if tokens[1] && tokens[1].match?(/\A\d+\/\d+\z/)
+            fraction_text    = tokens[1]
+            name_start_index = 2
+          end
+        # Case: fraction only at the beginning (e.g. "1/2 cup ...", after unicode normalization)
+        elsif first_token.match?(/\A\d+\/\d+\z/)
+          fraction_text     = first_token
+          name_start_index  = 1
+        end
+
+        quantity, fraction = calculate_quantity_and_fraction(whole_number_text, fraction_text)
+
+        # Try to detect a unit token right after quantity/fraction
+        if tokens[name_start_index]
+          unit_candidate = tokens[name_start_index].gsub(/[^[:alpha:]]/, "")
+          normalized_unit = UnitNormalizer.normalize_unit(unit_candidate)
+          if normalized_unit
+            unit = normalized_unit
+            name_start_index += 1
+          end
+        end
       end
+
+      name_tokens = tokens[name_start_index..] || []
+      name = name_tokens.join(" ").strip
+      # Remove everything after the first comma (precision part)
+      name = name.split(",").first&.strip if name.present?
+      name = ingredient_text.split(",").first&.strip if name.blank?
+
+      [ quantity, fraction, unit, name ]
     end
 
-    def handle_decimal_quantity(whole_number_text, fraction_text)
-      decimal = whole_number_text.to_f
-      converted = convert_decimal_to_fraction(decimal)
+    # Fraction utilities
 
-      # If conversion failed, use decimal as quantity
-      return [ decimal, fraction_text ] if converted.nil?
+    # Given an optional whole number and an optional fraction string,
+    # return a numeric quantity and a canonical fraction for display.
+    #
+    # Examples:
+    # - whole="1", fraction=nil      -> quantity=1.0, fraction=nil
+    # - whole=nil, fraction="1/2"    -> quantity=nil, fraction="1/2"
+    # - whole="1", fraction="1/2"    -> quantity=1.0, fraction="1/2"
+    # - whole="1.5", fraction=nil    -> quantity=1.0, fraction="1/2"
+    # - whole="0.25", fraction=nil   -> quantity=nil, fraction="1/4"
+    def calculate_quantity_and_fraction(whole_number_text, fraction_text)
+      whole_number_text = whole_number_text.to_s.strip
+      fraction_text     = fraction_text.to_s.strip
+      whole_number_text = nil if whole_number_text == ""
+      fraction_text     = nil if fraction_text == ""
 
-      # Convert the whole part and fraction part separately
-      whole_part = converted[:whole]
-      new_fraction_text = converted[:fraction]
-      # If whole_part is 0 and we have a fraction, quantity should be nil
-      quantity = whole_part.zero? ? nil : whole_part.to_f
-      [ quantity, new_fraction_text ]
-    end
+      # Fraction only (e.g. "1/2", "1/3")
+      if whole_number_text.nil? && fraction_text.present?
+        return [ nil, fraction_text ]
+      end
 
-    def extract_ingredient_name_and_precision(text, match, ingredient_text)
-      match_end = match.end(0)
+      # Whole number only (e.g. "1", "2")
+      if whole_number_text.present? && fraction_text.nil? && !whole_number_text.include?(".")
+        return [ whole_number_text.to_f, nil ]
+      end
 
-      # Check if there's a trailing 's' after the matched unit (e.g., "cups" vs "cup")
-      match_end = adjust_match_end_for_plural(text, match, match_end)
+      # Combined whole + fraction (e.g. "1" and "1/2")
+      if whole_number_text.present? && fraction_text.present?
+        return [ whole_number_text.to_f, fraction_text ]
+      end
 
-      # Extract everything after the match (and optional 's')
-      ingredient_name_with_precision = text[match_end..-1]&.strip
+      # Decimal number (e.g. "1.5", "0.25")
+      if whole_number_text&.include?(".")
+        decimal = whole_number_text.to_f
+        whole   = decimal.floor
+        frac    = decimal - whole
 
-      # If we got an empty string or nil, use the original text
-      ingredient_name_with_precision = ingredient_name_with_precision.presence || ingredient_text.strip
+        # Use FractionConverter to get a common fraction if possible
+        fraction_str = convert_decimal_to_fraction(frac)
 
-      # Split name and precision (everything after first comma goes to precision)
-      split_name_and_precision(ingredient_name_with_precision)
-    end
+        if fraction_str
+          quantity =
+            if whole.positive?
+              whole.to_f
+            else
+              nil
+            end
+          return [ quantity, fraction_str ]
+        else
+          # Fallback: keep decimal as quantity with no fraction
+          return [ decimal, nil ]
+        end
+      end
 
-    # Splits ingredient name and precision based on first comma
-    # Returns [name, precision] where precision is everything after the first comma
-    def split_name_and_precision(text)
-      return [ text, nil ] if text.blank?
-
-      parts = text.split(",", 2)
-      name = parts[0]&.strip
-      precision = parts[1]&.strip.presence
-
-      [ name, precision ]
-    end
-
-    def adjust_match_end_for_plural(text, match, match_end)
-      return match_end unless match[3].present? && match_end < text.length
-      return match_end unless text[match_end] == "s"
-
-      match_end + 1
+      [ nil, nil ]
     end
   end
 end

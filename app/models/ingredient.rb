@@ -54,21 +54,64 @@ class Ingredient < ApplicationRecord
       .limit(limit)
   end
 
-  # Canonicalize a string to a normalized form
-  # - converts to lowercase
-  # - removes numbers and common measurement units (g, kg, ml, l, etc.)
-  # - removes non-alphabetic characters (replaces with space)
-  # - compresses spaces
-  # - trims whitespace
+  # Parasitic words to remove from ingredient names
+  PARASITIC_WORDS = %w[
+    large small medium chopped diced sliced fresh peeled minced boneless skinless ground
+    lukewarm little warm refrigerated finely thinly roughly and or with breast dough
+  ].freeze
+
+  # Canonicalize a string to a normalized root form
+  # 1. converts to lowercase
+  # 2. replaces non-alphabetic characters with spaces
+  # 3. compresses spaces and splits into words
+  # 4. removes parasitic words (large, small, chopped, etc.)
+  # 5. takes the last remaining word as the root
+  # 6. applies simple singularization (removes 'es' or 's' ending)
   def self.canonicalize(string)
     return nil if string.nil?
 
-    string.to_s
-          .downcase
-          .gsub(/\d+\.?\d*\s*(#{UNITS_PATTERN_STRING})\b/i, " ") # Remove numbers with units
-          .gsub(/\d+/, " ")           # Remove remaining numbers
-          .gsub(/[^a-z\s]/, " ")      # Replace non-alphabetic characters with space
-          .gsub(/\s+/, " ")           # Compress multiple spaces to single space
-          .strip                      # Trim whitespace
+    # Step 1: Convert to lowercase
+    normalized = string.to_s.downcase
+
+    # Step 2: Remove numbers with units, then remaining numbers
+    normalized = normalized
+                 .gsub(/\d+\.?\d*\s*(#{UNITS_PATTERN_STRING})\b/i, " ")
+                 .gsub(/\d+/, " ")
+
+    # Step 2: Replace non-alphabetic characters with spaces
+    normalized = normalized.gsub(/[^a-z\s]/, " ")
+
+    # Step 3: Compress spaces and split into words
+    words = normalized.gsub(/\s+/, " ").strip.split(" ")
+
+    # Step 4: Remove parasitic words
+    words = words.reject { |word| PARASITIC_WORDS.include?(word) }
+
+    # Step 5: Take the last word as root (or empty string if no words left)
+    root = words.last || ""
+
+    # Step 6: Apply simple singularization
+    singularize(root)
+  end
+
+  # Simple singularization: remove 's' ending if present
+  # Special case for "potatoes" -> "potato" (remove "es")
+  # For all other words, just remove "s" (e.g., "apples" -> "apple", "onions" -> "onion")
+  def self.singularize(word)
+    return word if word.empty?
+
+    # Don't singularize very short words (1-2 chars)
+    return word if word.length <= 2
+
+    # Special cases: words ending in "es" that need "es" removed (not just "s")
+    return "potato" if word == "potatoes"
+    return "tomato" if word == "tomatoes"
+
+    # For all other words ending in "s", just remove the "s"
+    if word.end_with?("s") && word.length > 2
+      return word[0..-2]
+    end
+
+    word
   end
 end

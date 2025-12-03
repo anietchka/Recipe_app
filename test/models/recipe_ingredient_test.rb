@@ -3,7 +3,7 @@ require "test_helper"
 class RecipeIngredientTest < ActiveSupport::TestCase
   setup do
     @recipe = Recipe.create!(title: "Pasta Carbonara")
-    @ingredient = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+    @ingredient = Ingredient.create!(name: "Eggs", canonical_name: "egg")
   end
 
   test "should be valid with recipe and ingredient" do

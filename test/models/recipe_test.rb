@@ -37,7 +37,7 @@ class RecipeTest < ActiveSupport::TestCase
   test "cook! decrements pantry items with sufficient quantity" do
     user = User.create!(email: "demo@example.com")
     pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
-    eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+    eggs = Ingredient.create!(name: "Eggs", canonical_name: "egg")
 
     recipe = Recipe.create!(title: "Simple Pasta")
     RecipeIngredient.create!(
@@ -323,7 +323,7 @@ class RecipeTest < ActiveSupport::TestCase
   test "missing_ingredients_for returns ingredients not in user pantry with full quantity" do
     user = User.create!(email: "demo@example.com")
     pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
-    eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+    eggs = Ingredient.create!(name: "Eggs", canonical_name: "egg")
     cheese = Ingredient.create!(name: "Cheese", canonical_name: "cheese")
 
     recipe = Recipe.create!(title: "Pasta Carbonara")
@@ -434,7 +434,7 @@ class RecipeTest < ActiveSupport::TestCase
   test "missing_ingredients_for returns all ingredients when user has no pantry items" do
     user = User.create!(email: "demo@example.com")
     pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
-    eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+    eggs = Ingredient.create!(name: "Eggs", canonical_name: "egg")
 
     recipe = Recipe.create!(title: "Pasta with Eggs")
     RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "200g pasta", quantity: 200.0)
@@ -509,7 +509,7 @@ class RecipeTest < ActiveSupport::TestCase
   test "missing_ingredients_for returns empty array when user has sufficient quantities" do
     user = User.create!(email: "demo@example.com")
     pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
-    eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+    eggs = Ingredient.create!(name: "Eggs", canonical_name: "egg")
 
     recipe = Recipe.create!(title: "Pasta with Eggs")
     RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "200g pasta", quantity: 200.0)
