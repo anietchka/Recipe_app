@@ -1,11 +1,9 @@
-<div class="recipe-card">
+<%= link_to recipe_path(recipe), class: "recipe-card" do %>
   <div class="recipe-card__image-wrapper">
     <% if recipe.image_url.present? %>
-      <%= image_tag recipe.image_url, alt: recipe.title, class: "recipe-card__image" %>
+      <%= image_tag recipe.image_url, alt: recipe.title, class: "recipe-card__image", onerror: "this.onerror=null; this.src='#{image_path('dan-gold-5O1ddenSM4g-unsplash.jpg')}';" %>
     <% else %>
-      <div class="recipe-card__image-placeholder">
-        <%= t("recipes.index.no_image") %>
-      </div>
+      <%= image_tag "dan-gold-5O1ddenSM4g-unsplash.jpg", alt: recipe.title, class: "recipe-card__image" %>
     <% end %>
   </div>
 
@@ -28,9 +26,5 @@
         <%= recipe.status_text %>
       </span>
     </div>
-
-    <div class="recipe-card__actions">
-      <%= link_to t("recipes.index.view_recipe"), recipe_path(recipe), class: "recipe-card__link" %>
-    </div>
   </div>
-</div>
+<% end %>

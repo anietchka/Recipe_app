@@ -30,6 +30,26 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
+/* Centered h1 and reduced spacing for pantry items page when followed by onboarding card */
+h1 + .onboarding-card {
+  margin-top: 0.5rem;
+}
+
+/* Center and reduce spacing for h1 when followed by onboarding card */
+/* Using adjacent sibling selector to target h1 before onboarding card */
+h1:has(+ .onboarding-card) {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+/* Fallback for browsers that don't support :has() */
+@supports not selector(:has(*)) {
+  .container > h1:first-child {
+    text-align: center;
+    margin-bottom: 0.75rem;
+  }
+}
+
 h2 {
   color: #7A5E47;
   font-size: 1.5rem;
@@ -256,6 +276,162 @@ table form .btn {
 /* Actions header */
 .actions-header {
   margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Primary button (green) */
+.btn-primary {
+  background-color: #98B694;
+}
+
+.btn-primary:hover {
+  background-color: #7fa37b;
+}
+
+/* Disabled button */
+.btn:disabled,
+.btn-disabled {
+  background-color: #ccc;
+  color: #666;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn:disabled:hover,
+.btn-disabled:hover {
+  background-color: #ccc;
+  transform: none;
+}
+
+/* Pantry header (when pantry has items) */
+.pantry-header {
+  margin-bottom: 1.5rem;
+}
+
+.pantry-header-text {
+  font-size: 1.1rem;
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.pantry-header-text strong {
+  font-weight: 600;
+  color: #7A5E47;
+}
+
+.pantry-header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Onboarding card */
+.onboarding-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: white;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.onboarding-emoji {
+  font-size: 32px;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.onboarding-title {
+  color: #7A5E47;
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+.onboarding-steps {
+  text-align: left;
+  margin: 0 auto 2rem;
+  max-width: 500px;
+  padding-left: 1.5rem;
+  color: #444;
+  line-height: 2;
+  list-style: decimal;
+}
+
+.onboarding-steps li {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #444;
+}
+
+.onboarding-steps li:last-child {
+  margin-bottom: 0;
+}
+
+.onboarding-actions {
+  margin-bottom: 2rem;
+}
+
+.onboarding-actions-hint {
+  color: #999;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.onboarding-examples {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eee;
+}
+
+.onboarding-examples-title {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.onboarding-examples-hint {
+  color: #999;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+  margin-bottom: 0;
+}
+
+.ingredient-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.ingredient-chip {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.ingredient-chip:hover {
+  background-color: #98B694;
+  color: white;
+  border-color: #98B694;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.ingredient-chip:active {
+  transform: translateY(0);
 }
 
 /* Hidden class */
@@ -421,10 +597,13 @@ table form .btn {
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 120px;
 }
 
 .pantry-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
 .pantry-card-header {
@@ -432,13 +611,11 @@ table form .btn {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #eee;
 }
 
 .pantry-card-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #7A5E47;
   flex: 1;
@@ -466,49 +643,50 @@ table form .btn {
   color: #d32f2f;
 }
 
-.pantry-card-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+.pantry-card-quantity-section {
+  margin-bottom: 1rem;
+  flex: 1;
 }
 
-.pantry-card-quantity {
-  flex: 1;
+.pantry-card-quantity-display {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: baseline;
+  gap: 0.25rem;
   flex-wrap: wrap;
 }
 
-.quantity-value,
-.fraction-value,
-.unit-value {
+.quantity-value-large,
+.fraction-value-large,
+.unit-value-large {
   color: #333;
-}
-
-.quantity-value {
+  font-size: 1.25rem;
   font-weight: 500;
+  line-height: 1.4;
 }
 
-.fraction-value {
-  font-size: 0.9rem;
+.quantity-value-large {
+  font-weight: 600;
 }
 
-.unit-value {
+.unit-value-large {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
 }
 
-.empty-quantity {
+.pantry-staple-text {
   color: #999;
   font-style: italic;
   font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.5;
 }
 
-.pantry-card-actions {
+.pantry-card-actions-bottom {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: auto;
 }
 
 .quantity-btn {
@@ -540,6 +718,38 @@ table form .btn {
   background-color: #5d4635;
 }
 
+/* Recipes Header */
+.recipes-header {
+  max-width: 900px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+
+.recipes-header__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.recipes-header__title {
+  margin: 0;
+  color: #7A5E47;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.recipes-header__back {
+  margin: 0;
+}
+
+.recipes-header__description {
+  color: #666;
+  font-size: 1rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
 /* Recipes Container */
 .recipes-container {
   max-width: 900px;
@@ -552,21 +762,25 @@ table form .btn {
 
 /* Recipe Card */
 .recipe-card {
+  display: block;
   background-color: white;
   border-radius: 10px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
 
 .recipe-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
 .recipe-card__image-wrapper {
   width: 100%;
-  height: 160px;
+  height: 140px;
   overflow: hidden;
   background-color: #FFF8E7;
 }
@@ -651,28 +865,6 @@ table form .btn {
 .recipe-card__status--shopping {
   background-color: #e2e3e5;
   color: #383d41;
-}
-
-.recipe-card__actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1rem;
-}
-
-.recipe-card__link {
-  padding: 0.5rem 1rem;
-  border: 1px solid #98B694;
-  border-radius: 6px;
-  color: #98B694;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.recipe-card__link:hover {
-  background-color: #98B694;
-  color: white;
 }
 
 /* Pagination */
@@ -962,6 +1154,10 @@ table form .btn {
   color: #2e7d32;
 }
 
+.recipe-show-ingredient-item--available .recipe-show-ingredient-item__name {
+  color: #333;
+}
+
 .recipe-show-ingredient-item--missing {
   color: #666;
 }
@@ -998,6 +1194,34 @@ table form .btn {
   line-height: 1.5;
 }
 
+.recipe-show-ingredient-item__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.recipe-show-ingredient-item__name {
+  font-weight: 600;
+  color: #333;
+}
+
+.recipe-show-ingredient-item__details {
+  font-size: 0.85rem;
+  color: #666;
+  line-height: 1.4;
+}
+
+.recipe-show-ingredient-item__separator {
+  margin: 0 0.5rem;
+  color: #999;
+}
+
+.recipe-show-ingredient-item__missing-text {
+  color: #c62828;
+  font-weight: 500;
+}
+
 .recipe-show-ingredient-item__missing-info {
   color: #d32f2f;
   font-size: 0.9em;
@@ -1008,6 +1232,25 @@ table form .btn {
   padding: 2rem;
   border-top: 1px solid #eee;
   background-color: #f9f9f9;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.recipe-show-actions__primary {
+  text-align: right;
+  flex: 1;
+}
+
+.recipe-show-actions__secondary {
+  text-align: left;
+}
+
+.recipe-show-pantry-button {
+  display: inline-block;
+  text-decoration: none;
 }
 
 .recipe-show-cook-form {

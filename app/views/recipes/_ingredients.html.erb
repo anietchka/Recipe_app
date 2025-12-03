@@ -1,0 +1,11 @@
+<!-- Ingredients section -->
+<div class="recipe-show-ingredients">
+  <h2 class="recipe-show-section-title">
+    <%= t("recipes.show.ingredients_title") %>
+  </h2>
+
+  <div class="recipe-show-ingredients-grid">
+    <%= render "available_ingredients" %>
+    <%= render "missing_ingredients" %>
+  </div>
+</div>

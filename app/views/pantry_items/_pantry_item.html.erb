@@ -1,0 +1,43 @@
+<div class="pantry-card">
+  <div class="pantry-card-header">
+    <h3 class="pantry-card-title"><%= pantry_item.ingredient.name %></h3>
+
+    <%= button_to pantry_item_path(pantry_item), method: :delete, data: { confirm: t("pantry_items.index.confirm_delete") }, class: "pantry-card-delete", title: t("pantry_items.index.delete_button") do %>
+      ×
+    <% end %>
+  </div>
+
+  <div class="pantry-card-quantity-section">
+    <% if pantry_item.quantity.present? || pantry_item.fraction.present? %>
+      <div class="pantry-card-quantity-display">
+        <% if pantry_item.quantity.present? && pantry_item.quantity > 0 %>
+          <span class="quantity-value-large"><%= pantry_item.quantity %></span>
+        <% end %>
+
+        <% if pantry_item.fraction.present? %>
+          <span class="fraction-value-large"><%= pantry_item.fraction %></span>
+        <% end %>
+
+        <% if pantry_item.unit.present? %>
+          <span class="unit-value-large"><%= pantry_item.unit %></span>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="pantry-staple-text">
+        <%= t("pantry_items.index.pantry_staple") %>
+      </p>
+    <% end %>
+  </div>
+
+  <% if pantry_item.quantity.present? || pantry_item.fraction.present? %>
+    <div class="pantry-card-actions-bottom">
+      <%= button_to decrement_pantry_item_path(pantry_item), method: :patch, class: "quantity-btn quantity-btn-decrement", title: t("pantry_items.index.decrement") do %>
+        −
+      <% end %>
+
+      <%= button_to increment_pantry_item_path(pantry_item), method: :patch, class: "quantity-btn quantity-btn-increment", title: t("pantry_items.index.increment") do %>
+        +
+      <% end %>
+    </div>
+  <% end %>
+</div>

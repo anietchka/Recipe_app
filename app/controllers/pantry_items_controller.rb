@@ -4,9 +4,7 @@ class PantryItemsController < ApplicationController
   before_action :set_pantry_item, only: %i[destroy increment decrement]
 
   def index
-    @pantry_items = current_user.pantry_items.includes(:ingredient).order(created_at: :desc)
-    @pantry_item = PantryItem.new
-    @common_fractions = FractionConverter::COMMON_FRACTIONS.values.sort
+    @pantry_items_presenter = PantryItems::PantryItemsPresenter.new(current_user)
   end
 
   def create
@@ -22,10 +20,9 @@ class PantryItemsController < ApplicationController
     if result.success?
       redirect_to pantry_items_path, notice: t(".success")
     else
-      @pantry_item = result.pantry_item || current_user.pantry_items.build(pantry_item_params)
-      result.errors.each { |key, message| @pantry_item.errors.add(key, message) }
-      @pantry_items = current_user.pantry_items.includes(:ingredient).order(created_at: :desc)
-      @common_fractions = FractionConverter::COMMON_FRACTIONS.values.sort
+      pantry_item = result.pantry_item || current_user.pantry_items.build(pantry_item_params)
+      result.errors.each { |key, message| pantry_item.errors.add(key, message) }
+      @pantry_items_presenter = PantryItems::PantryItemsPresenter.new(current_user, pantry_item: pantry_item)
       render :index, status: :unprocessable_entity
     end
   end
