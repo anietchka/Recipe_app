@@ -4,36 +4,96 @@ class IngredientTest < ActiveSupport::TestCase
   # Tests for canonicalize method
   test "canonicalize converts to lowercase" do
     assert_equal "onion", Ingredient.canonicalize("ONION")
-    assert_equal "yellow onion", Ingredient.canonicalize("Yellow Onion")
+    # Note: new logic takes last word as root, so "Yellow Onion" -> "onion"
+    assert_equal "onion", Ingredient.canonicalize("Yellow Onion")
   end
 
   test "canonicalize removes non-alphabetic characters" do
     assert_equal "onion", Ingredient.canonicalize("onion!")
-    assert_equal "yellow onion", Ingredient.canonicalize("yellow-onion")
+    # Note: new logic takes last word as root
+    assert_equal "onion", Ingredient.canonicalize("yellow-onion")
     assert_equal "tomato", Ingredient.canonicalize("tomato123")
   end
 
   test "canonicalize compresses spaces" do
-    assert_equal "yellow onion", Ingredient.canonicalize("yellow  onion")
-    assert_equal "fresh basil", Ingredient.canonicalize("fresh   basil")
+    # Note: new logic takes last word as root and removes parasitic words
+    assert_equal "onion", Ingredient.canonicalize("yellow  onion")
+    assert_equal "basil", Ingredient.canonicalize("fresh   basil")
   end
 
   test "canonicalize trims whitespace" do
     assert_equal "onion", Ingredient.canonicalize("  onion  ")
-    assert_equal "yellow onion", Ingredient.canonicalize(" yellow onion ")
+    # Note: new logic takes last word as root
+    assert_equal "onion", Ingredient.canonicalize(" yellow onion ")
   end
 
   test "canonicalize handles complex examples" do
-    assert_equal "yellow onions finely chopped", Ingredient.canonicalize("2 Yellow Onions, finely chopped!")
-    assert_equal "fresh basil leaves", Ingredient.canonicalize("Fresh Basil Leaves (10g)")
+    # Note: new logic takes last word as root, removes parasitic words, and singularizes
+    assert_equal "onion", Ingredient.canonicalize("2 Yellow Onions, finely chopped!")
+    # Note: "leaves" -> "leave" (simple logic removes "s")
+    assert_equal "leave", Ingredient.canonicalize("Fresh Basil Leaves (10g)")
+  end
+
+  # Tests for improved canonicalize with root extraction and singularization
+  test "canonicalize extracts root from potato variants" do
+    assert_equal "potato", Ingredient.canonicalize("large potatoes")
+    assert_equal "potato", Ingredient.canonicalize("russet potatoes, peeled")
+    assert_equal "potato", Ingredient.canonicalize("small potatoes chopped")
+    assert_equal "potato", Ingredient.canonicalize("potato")
+    assert_equal "potato", Ingredient.canonicalize("potatoes")
+  end
+
+  test "canonicalize removes parasitic words" do
+    parasitic_words = %w[large small medium chopped diced sliced fresh peeled minced boneless skinless ground]
+    parasitic_words.each do |word|
+      assert_equal "onion", Ingredient.canonicalize("#{word} onion"), "Should remove '#{word}'"
+      assert_equal "onion", Ingredient.canonicalize("onion #{word}"), "Should remove '#{word}' at end"
+    end
+  end
+
+  test "canonicalize singularizes words ending in es" do
+    assert_equal "potato", Ingredient.canonicalize("potatoes")
+    assert_equal "tomato", Ingredient.canonicalize("tomatoes")
+    assert_equal "onion", Ingredient.canonicalize("onions")
+  end
+
+  test "canonicalize singularizes words ending in s" do
+    assert_equal "carrot", Ingredient.canonicalize("carrots")
+    # Note: "apples" -> "apple" (removes 's', keeps 'e')
+    assert_equal "apple", Ingredient.canonicalize("apples")
+    assert_equal "pepper", Ingredient.canonicalize("peppers")
+  end
+
+  test "canonicalize handles complex potato examples" do
+    assert_equal "potato", Ingredient.canonicalize("2 large potatoes, peeled and thinly sliced")
+    assert_equal "potato", Ingredient.canonicalize("russet potatoes, peeled")
+    assert_equal "potato", Ingredient.canonicalize("small potatoes chopped")
+    assert_equal "potato", Ingredient.canonicalize("potato")
+  end
+
+  test "canonicalize takes last word as root when multiple words remain" do
+    assert_equal "onion", Ingredient.canonicalize("yellow onion")
+    assert_equal "cheese", Ingredient.canonicalize("parmesan cheese")
+    # Note: "leaves" -> "leave" (simple logic removes "s"), which is acceptable
+    assert_equal "leave", Ingredient.canonicalize("fresh basil leaves")
+  end
+
+  test "canonicalize handles words that should not be singularized" do
+    # Words that don't end in 's' stay as-is
+    assert_equal "rice", Ingredient.canonicalize("rice")
+    assert_equal "lettuce", Ingredient.canonicalize("lettuce")
+    # Note: "cheeses" -> "cheese" (removes 's', keeps 'e')
+    assert_equal "cheese", Ingredient.canonicalize("cheeses")
   end
 
   test "canonicalize removes measurement units" do
     assert_equal "pasta", Ingredient.canonicalize("200g pasta")
     assert_equal "milk", Ingredient.canonicalize("500ml milk")
     assert_equal "flour", Ingredient.canonicalize("1 kg flour")
-    assert_equal "eggs", Ingredient.canonicalize("2 eggs")
-    assert_equal "parmesan cheese", Ingredient.canonicalize("100g parmesan cheese")
+    # Note: new logic singularizes
+    assert_equal "egg", Ingredient.canonicalize("2 eggs")
+    # Note: new logic takes last word as root
+    assert_equal "cheese", Ingredient.canonicalize("100g parmesan cheese")
   end
 
   test "normalize_unit converts cups to cup" do

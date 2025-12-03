@@ -25,7 +25,7 @@ module PantryItems
     end
 
     test "creates pantry item with existing ingredient" do
-      existing_ingredient = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+      existing_ingredient = Ingredient.create!(name: "Eggs", canonical_name: "egg")
 
       assert_difference("PantryItem.count") do
         assert_no_difference("Ingredient.count") do
@@ -38,7 +38,7 @@ module PantryItems
     end
 
     test "updates ingredient name if capitalization is better" do
-      existing_ingredient = Ingredient.create!(name: "eggs", canonical_name: "eggs")
+      existing_ingredient = Ingredient.create!(name: "eggs", canonical_name: "egg")
 
       result = PantryItems::Create.call(@user, @params)
 

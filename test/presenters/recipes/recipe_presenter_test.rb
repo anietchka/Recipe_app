@@ -7,7 +7,7 @@ module Recipes
 
       # Create ingredients
       @pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
-      @eggs = Ingredient.create!(name: "Eggs", canonical_name: "eggs")
+      @eggs = Ingredient.create!(name: "Eggs", canonical_name: "egg")
       @cheese = Ingredient.create!(name: "Cheese", canonical_name: "cheese")
       @salt = Ingredient.create!(name: "Salt", canonical_name: "salt")
 
