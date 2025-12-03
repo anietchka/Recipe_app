@@ -13,14 +13,11 @@
 
         <div class="recipe-show-ingredient-item__content">
           <div class="recipe-show-ingredient-item__name">
-            <strong><%= recipe_ingredient.ingredient.name %></strong>
+            <strong><%= recipe_ingredient.original_text %></strong>
           </div>
 
           <div class="recipe-show-ingredient-item__details">
-            <%= t("recipes.show.recipe_requires", quantity: @recipe_presenter.format_ingredient_quantity(recipe_ingredient)) %>
-
             <% if pantry_item %>
-              <span class="recipe-show-ingredient-item__separator"> • </span>
               <%= t("recipes.show.your_pantry_has", quantity: @recipe_presenter.format_pantry_quantity(pantry_item)) %>
             <% end %>
           </div>

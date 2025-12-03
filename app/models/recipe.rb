@@ -67,11 +67,11 @@ class Recipe < ApplicationRecord
 
     if pantry_item.nil?
       build_missing_hash(recipe_ingredient, required_quantity)
-    elsif pantry_item_without_quantity?(pantry_item)
+    elsif pantry_item.without_quantity?
       # PantryItem exists but has no quantity specified - consider it available
       # This means the user has the ingredient, even if we don't know how much
       nil
-    elsif insufficient_quantity?(recipe_ingredient, pantry_item)
+    elsif pantry_item.insufficient_quantity?(recipe_ingredient)
       # Convert pantry quantity to recipe unit for comparison
       available_in_recipe_unit = convert_quantity_to_recipe_unit(
         pantry_item.available_quantity,
@@ -80,8 +80,9 @@ class Recipe < ApplicationRecord
       )
 
       if available_in_recipe_unit.nil?
-        # Units incompatible, treat as missing
-        build_missing_hash(recipe_ingredient, required_quantity)
+        # Units incompatible (e.g., cup vs g), consider ingredient as available
+        # We can't compare quantities, so assume the user has enough
+        nil
       else
         missing_total = required_quantity - available_in_recipe_unit
         build_missing_hash(recipe_ingredient, missing_total) if missing_total > 0
@@ -89,34 +90,7 @@ class Recipe < ApplicationRecord
     end
   end
 
-  def pantry_item_without_quantity?(pantry_item)
-    # Check if pantry item has no quantity specified (both quantity and fraction are nil/blank)
-    pantry_item.quantity.nil? && pantry_item.fraction.blank?
-  end
 
-  def insufficient_quantity?(recipe_ingredient, pantry_item)
-    # If no units specified, compare directly
-    if pantry_item.unit.nil? && recipe_ingredient.unit.nil?
-      return recipe_ingredient.required_quantity > pantry_item.available_quantity
-    end
-
-    # If one has unit and other doesn't, treat as insufficient (can't compare)
-    return true if pantry_item.unit.nil? || recipe_ingredient.unit.nil?
-
-    # If units are incompatible, treat as insufficient
-    return true unless units_compatible?(pantry_item.unit, recipe_ingredient.unit)
-
-    # Convert pantry quantity to recipe unit for comparison
-    available_in_recipe_unit = convert_quantity(
-      pantry_item.available_quantity,
-      pantry_item.unit,
-      recipe_ingredient.unit
-    )
-
-    return true unless available_in_recipe_unit
-
-    recipe_ingredient.required_quantity > available_in_recipe_unit
-  end
 
   def convert_quantity_to_recipe_unit(quantity, from_unit, to_unit)
     return quantity if from_unit == to_unit

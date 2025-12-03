@@ -2,25 +2,33 @@
 <div class="onboarding-card">
   <div class="onboarding-emoji">🥕</div>
 
-  <h2 class="onboarding-title"><%= t(".onboarding_title") %></h2>
+  <h2 class="onboarding-title">
+    <%= t("pantry_items.index.onboarding_title") %>
+  </h2>
+
+  <p class="onboarding-description">
+    <%= t("pantry_items.index.onboarding_description") %>
+  </p>
 
   <ol class="onboarding-steps">
-    <li><%= t(".onboarding_step_1") %></li>
-    <li><%= t(".onboarding_step_2") %></li>
-    <li><%= t(".onboarding_step_3") %></li>
+    <li><%= t("pantry_items.index.onboarding_step_1") %></li>
+    <li><%= t("pantry_items.index.onboarding_step_2") %></li>
+    <li><%= t("pantry_items.index.onboarding_step_3") %></li>
   </ol>
 
   <div class="onboarding-actions">
     <button type="button" class="btn btn-primary" onclick="openModal()">
-      <%= t(".add_first_ingredient_button") %>
+      <%= t("pantry_items.index.add_first_ingredient_button") %>
     </button>
 
-    <p class="onboarding-actions-hint"><%= t(".onboarding_actions_hint") %></p>
+    <p class="onboarding-actions-hint">
+      <%= t("pantry_items.index.onboarding_actions_hint") %>
+    </p>
   </div>
 
   <div class="onboarding-examples">
     <p class="onboarding-examples-title">
-      <%= t(".onboarding_examples_title") %>
+      <%= t("pantry_items.index.onboarding_examples_title") %>
     </p>
 
     <div class="ingredient-chips">
@@ -36,7 +44,7 @@
     </div>
 
     <p class="onboarding-examples-hint">
-      <%= t(".onboarding_examples_hint") %>
+      <%= t("pantry_items.index.onboarding_examples_hint") %>
     </p>
   </div>
 </div>
