@@ -30,6 +30,12 @@
   </head>
 
   <body>
+    <nav class="navbar">
+      <%= link_to t("navbar.pantry"), pantry_items_path, class: "navbar__link #{'active' if navbar_active?('pantry_items')}" %>
+      <%= link_to t("navbar.recipes"), recipes_path, class: "navbar__link #{'active' if navbar_active?('recipes')}" %>
+      <%= link_to t("navbar.history"), cooked_recipes_path, class: "navbar__link #{'active' if navbar_active?('cooked_recipes')}" %>
+    </nav>
+
     <main class="container">
       <% if notice %>
         <div class="notice"><%= notice %></div>

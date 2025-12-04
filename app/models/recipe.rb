@@ -4,6 +4,7 @@ class Recipe < ApplicationRecord
 
   has_many :recipe_ingredients, dependent: :destroy
   has_many :ingredients, through: :recipe_ingredients
+  has_many :cooked_recipes, dependent: :destroy
 
   validates :title, presence: true
 
@@ -24,42 +25,44 @@ class Recipe < ApplicationRecord
   # - Handles fractions in both recipe_ingredient and pantry_item
   # - Never goes below 0
   # - Ignores ingredients not in the user's pantry
+  # - Creates a CookedRecipe record for the user
   def cook!(user)
     recipe_ingredients.each do |recipe_ingredient|
-      pantry_item = PantryItem.find_by(
-        user: user,
-        ingredient: recipe_ingredient.ingredient
-      )
-
-      next unless pantry_item
-
-      # Skip pantry items without quantity (base ingredients like salt, oil, etc.)
-      # These are considered "infinite" and should not be decremented
-      if pantry_item.quantity.nil? && pantry_item.fraction.blank?
-        next
-      end
-
-      # Convert required quantity to pantry item's unit
-      required_quantity = recipe_ingredient.required_quantity
-      required_in_pantry_unit = convert_quantity_to_pantry_unit(
-        required_quantity,
-        recipe_ingredient.unit,
-        pantry_item.unit
-      )
-
-      next unless required_in_pantry_unit
-
-      current_quantity = pantry_item.available_quantity
-
-      new_quantity_total = [ current_quantity - required_in_pantry_unit, 0.0 ].max
-
-      new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
-
-      pantry_item.update!(quantity: new_quantity, fraction: new_fraction)
+      decrement_pantry_item_for_ingredient(recipe_ingredient, user)
     end
+
+    CookedRecipe.create!(user: user, recipe: self)
   end
 
   private
+
+  def decrement_pantry_item_for_ingredient(recipe_ingredient, user)
+    pantry_item = PantryItem.find_by(
+      user: user,
+      ingredient: recipe_ingredient.ingredient
+    )
+
+    return unless pantry_item
+
+    # Skip pantry items without quantity (base ingredients like salt, oil, etc.)
+    # These are considered "infinite" and should not be decremented
+    return if pantry_item.quantity.nil? && pantry_item.fraction.blank?
+
+    # Convert required quantity to pantry item's unit
+    required_in_pantry_unit = convert_quantity_to_pantry_unit(
+      recipe_ingredient.required_quantity,
+      recipe_ingredient.unit,
+      pantry_item.unit
+    )
+
+    return unless required_in_pantry_unit
+
+    current_quantity = pantry_item.available_quantity
+    new_quantity_total = [ current_quantity - required_in_pantry_unit, 0.0 ].max
+    new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
+
+    pantry_item.update!(quantity: new_quantity, fraction: new_fraction)
+  end
 
   def calculate_missing_for_ingredient(recipe_ingredient, user)
     pantry_item = PantryItem.find_by(user: user, ingredient: recipe_ingredient.ingredient)

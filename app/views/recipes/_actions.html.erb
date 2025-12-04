@@ -1,9 +1,5 @@
 <!-- Actions -->
 <div class="recipe-show-actions">
-  <div class="recipe-show-actions__secondary">
-    <%= link_to t("recipes.show.go_to_pantry"), pantry_items_path, class: "btn btn-secondary recipe-show-pantry-button" %>
-  </div>
-
   <div class="recipe-show-actions__primary">
     <%= form_with url: cook_recipe_path(@recipe), method: :post, local: true, class: "recipe-show-cook-form" do |f| %>
       <%= f.submit t("recipes.show.cook_button"), class: "recipe-show-cook-button" %>

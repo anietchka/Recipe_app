@@ -10,9 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_03_215055) do
+ActiveRecord::Schema[8.1].define(version: 2025_12_04_124939) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "cooked_recipes", force: :cascade do |t|
+    t.datetime "cooked_at", default: -> { "CURRENT_TIMESTAMP" }
+    t.datetime "created_at", null: false
+    t.bigint "recipe_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["recipe_id"], name: "index_cooked_recipes_on_recipe_id"
+    t.index ["user_id"], name: "index_cooked_recipes_on_user_id"
+  end
 
   create_table "ingredients", force: :cascade do |t|
     t.string "canonical_name"
@@ -66,6 +76,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_03_215055) do
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "cooked_recipes", "recipes"
+  add_foreign_key "cooked_recipes", "users"
   add_foreign_key "pantry_items", "ingredients"
   add_foreign_key "pantry_items", "users"
   add_foreign_key "recipe_ingredients", "ingredients"

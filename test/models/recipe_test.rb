@@ -536,4 +536,35 @@ class RecipeTest < ActiveSupport::TestCase
 
     assert_equal 0, missing.count
   end
+
+  test "cook! creates a CookedRecipe for the user" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    recipe = Recipe.create!(title: "Simple Pasta")
+    RecipeIngredient.create!(
+      recipe: recipe,
+      ingredient: pasta,
+      quantity: 200.0,
+      unit: "g",
+      original_text: "200g pasta"
+    )
+
+    PantryItem.create!(
+      user: user,
+      ingredient: pasta,
+      quantity: 500.0,
+      unit: "g"
+    )
+
+    assert_difference "CookedRecipe.count", 1 do
+      recipe.cook!(user)
+    end
+
+    cooked_recipe = CookedRecipe.find_by(user: user, recipe: recipe)
+    assert_not_nil cooked_recipe
+    assert_equal user, cooked_recipe.user
+    assert_equal recipe, cooked_recipe.recipe
+    assert_not_nil cooked_recipe.cooked_at
+  end
 end

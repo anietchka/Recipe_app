@@ -1,11 +1,36 @@
 <div class="recipes-header">
-  <div class="recipes-header__top">
-    <h1 class="recipes-header__title"><%= t(".title") %></h1>
-    <%= link_to t(".back_to_pantry"), pantry_items_path, class: "btn btn-secondary recipes-header__back" %>
-  </div>
-
   <p class="recipes-header__description"><%= t(".description") %></p>
 </div>
+
+<%= form_with url: recipes_path, method: :get, local: true, class: "recipes-filters" do |f| %>
+  <div class="recipes-filters__fields">
+    <div class="field">
+      <%= f.label :min_rating, t(".filters.min_rating") %>
+      <%= f.number_field :min_rating, value: params[:min_rating], step: 0.1, min: 0, max: 5, placeholder: t(".filters.min_rating_placeholder") %>
+    </div>
+
+    <div class="field">
+      <%= f.label :max_prep_time, t(".filters.max_prep_time") %>
+      <%= f.number_field :max_prep_time, value: params[:max_prep_time], min: 0, placeholder: t(".filters.max_prep_time_placeholder") %>
+    </div>
+
+    <div class="field">
+      <%= f.label :max_cook_time, t(".filters.max_cook_time") %>
+      <%= f.number_field :max_cook_time, value: params[:max_cook_time], min: 0, placeholder: t(".filters.max_cook_time_placeholder") %>
+    </div>
+
+    <div class="field">
+      <%= f.submit t(".filters.filter_button"), class: "btn" %>
+
+      <% if params[:min_rating].present? || params[:max_prep_time].present? || params[:max_cook_time].present? %>
+        <%= link_to t(".filters.clear"), recipes_path, class: "btn btn-secondary" %>
+      <% end %>
+    </div>
+  </div>
+
+  <%# Preserve page parameter when filtering %>
+  <%= hidden_field_tag :page, params[:page] if params[:page].present? %>
+<% end %>
 
 <% if @recipes_presenter.any? %>
   <div class="recipes-container">
