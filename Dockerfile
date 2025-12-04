@@ -1,10 +1,7 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-# This Dockerfile is designed for production, not development. Use with Kamal or build'n'run by hand:
-# docker build -t recipe_app .
-# docker run -d -p 80:80 -e RAILS_MASTER_KEY=<value from config/master.key> --name recipe_app recipe_app
-
+# This Dockerfile is designed for production deployment with Fly.io or Kamal.
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
@@ -71,6 +68,10 @@ COPY --chown=rails:rails --from=build /rails /rails
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start server via Thruster by default, this can be overwritten at runtime
-EXPOSE 80
+# Expose port (Fly.io uses PORT env var, defaults to 8080)
+# Puma will read PORT from environment (see config/puma.rb)
+EXPOSE 8080
+
+# Start server via Thruster (which wraps Puma)
+# Thruster will use Puma which reads PORT from ENV (Fly.io sets PORT=8080)
 CMD ["./bin/thrust", "./bin/rails", "server"]

@@ -92,18 +92,27 @@ test:
 production:
   primary: &primary_production
     <<: *default
+    # Fly.io provides DATABASE_URL automatically when PostgreSQL is attached
+    # Rails will use DATABASE_URL if present, otherwise fall back to these settings
+    url: <%= ENV.fetch("DATABASE_URL") { "postgresql://recipe_app:#{ENV['RECIPE_APP_DATABASE_PASSWORD']}@#{ENV.fetch('DB_HOST', 'localhost')}/recipe_app_production" } %>
     database: recipe_app_production
     username: recipe_app
     password: <%= ENV["RECIPE_APP_DATABASE_PASSWORD"] %>
   cache:
     <<: *primary_production
+    # Use same database URL but with different database name for cache
+    url: <%= ENV.fetch("CACHE_DATABASE_URL") { (db_url = ENV["DATABASE_URL"]) ? db_url.sub(/\/[^\/]+$/, "/recipe_app_production_cache") : nil } %>
     database: recipe_app_production_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
+    # Use same database URL but with different database name for queue
+    url: <%= ENV.fetch("QUEUE_DATABASE_URL") { (db_url = ENV["DATABASE_URL"]) ? db_url.sub(/\/[^\/]+$/, "/recipe_app_production_queue") : nil } %>
     database: recipe_app_production_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
+    # Use same database URL but with different database name for cable
+    url: <%= ENV.fetch("CABLE_DATABASE_URL") { (db_url = ENV["DATABASE_URL"]) ? db_url.sub(/\/[^\/]+$/, "/recipe_app_production_cable") : nil } %>
     database: recipe_app_production_cable
     migrations_paths: db/cable_migrate
