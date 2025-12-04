@@ -136,7 +136,7 @@ module Recipes
       if pantry_item.unit.present?
         parts << pantry_item.unit
       end
-      parts.empty? ? I18n.t("recipes.show.no_quantity") : parts.join(" ")
+      parts.empty? ? I18n.t("recipes.show.present") : parts.join(" ")
     end
 
     # Format missing quantity for display

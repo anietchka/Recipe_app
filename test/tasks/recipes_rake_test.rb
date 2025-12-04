@@ -9,9 +9,13 @@ class RecipesRakeTest < ActiveSupport::TestCase
   end
 
   def teardown
-    RecipeIngredient.delete_all
-    Recipe.delete_all
-    Ingredient.delete_all
+    # Only clean up if we're in test environment
+    # This prevents accidentally deleting development data
+    if Rails.env.test?
+      RecipeIngredient.delete_all
+      Recipe.delete_all
+      Ingredient.delete_all
+    end
   end
 
   test "imports recipes from custom file path" do

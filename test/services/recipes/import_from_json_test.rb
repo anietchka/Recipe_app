@@ -3,10 +3,12 @@ require "test_helper"
 class Recipes::ImportFromJsonTest < ActiveSupport::TestCase
   setup do
     @fixture_path = Rails.root.join("test", "fixtures", "files", "recipes_minimal.json")
-    # Clean up before each test
-    Recipe.destroy_all
-    Ingredient.destroy_all
-    RecipeIngredient.destroy_all
+    # Clean up before each test (only in test environment)
+    if Rails.env.test?
+      Recipe.destroy_all
+      Ingredient.destroy_all
+      RecipeIngredient.destroy_all
+    end
   end
 
   test "imports recipes from JSON file" do

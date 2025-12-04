@@ -278,10 +278,10 @@ module Recipes
       assert_equal "500.0 g", formatted
     end
 
-    test "format_pantry_quantity returns no_quantity translation when empty" do
+    test "format_pantry_quantity returns present translation when empty" do
       pantry_item = PantryItem.create!(user: @user, ingredient: @salt)
       formatted = @presenter.format_pantry_quantity(pantry_item)
-      assert_equal I18n.t("recipes.show.no_quantity"), formatted
+      assert_equal I18n.t("recipes.show.present"), formatted
     end
 
     test "format_missing_quantity formats missing quantity with unit" do
