@@ -8,7 +8,15 @@
   </div>
 
   <div class="recipe-card__content">
-    <h2 class="recipe-card__title"><%= recipe.title %></h2>
+    <div class="recipe-card__title-row">
+      <h2 class="recipe-card__title"><%= recipe.title %></h2>
+
+      <% if recipe.ratings.present? %>
+        <span class="recipe-card__rating">
+          ⭐ <%= number_with_precision(recipe.ratings, precision: 1) %>
+        </span>
+      <% end %>
+    </div>
 
     <div class="recipe-card__score">
       <%= t("recipes.index.ingredients_score", matched: recipe.matched_ingredients, total: recipe.total_ingredients_count, missing: recipe.missing_count) %>

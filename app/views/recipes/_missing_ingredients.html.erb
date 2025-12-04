@@ -31,10 +31,6 @@
               </div>
 
               <div class="recipe-show-ingredient-item__details">
-                <%= t("recipes.show.recipe_requires", quantity: @recipe_presenter.format_ingredient_quantity(recipe_ingredient)) %>
-
-                <span class="recipe-show-ingredient-item__separator"> • </span>
-
                 <% if missing_info[:missing_quantity].present? || missing_info[:missing_fraction].present? %>
                   <span class="recipe-show-ingredient-item__missing-text">
                     <%= t("recipes.show.missing_quantity", quantity: @recipe_presenter.format_missing_quantity(missing_info)) %>

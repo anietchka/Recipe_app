@@ -808,12 +808,30 @@ table form .btn {
   padding: 16px;
 }
 
+.recipe-card__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  gap: 1rem;
+}
+
 .recipe-card__title {
   color: #7A5E47;
   font-size: 20px;
   font-weight: bold;
-  margin: 0 0 0.75rem 0;
+  margin: 0;
   line-height: 1.3;
+  flex: 1;
+  min-width: 0; /* Allow title to shrink if needed */
+}
+
+.recipe-card__rating {
+  font-size: 1rem;
+  color: #7A5E47;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .recipe-card__score {
