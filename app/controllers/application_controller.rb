@@ -11,4 +11,10 @@ class ApplicationController < ActionController::Base
     @current_user ||= User.find_by(email: "demo@example.com") || User.first
   end
   helper_method :current_user
+
+  # Helper method to determine if a navbar link should be active
+  def navbar_active?(controller)
+    controller_name == controller
+  end
+  helper_method :navbar_active?
 end

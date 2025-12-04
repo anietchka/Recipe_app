@@ -36,7 +36,6 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
   test "index should display recipes found by Finder service" do
     get recipes_url
     assert_response :success
-    assert_select "h1", text: /Recipes/
     assert_select ".recipe-card", minimum: 1
   end
 

@@ -2,15 +2,17 @@ module Recipes
   class Finder
     DEFAULT_LIMIT = 20
     DEFAULT_OFFSET = 0
+    DEFAULT_FILTERS = {}.freeze
 
-    def self.call(user, limit: DEFAULT_LIMIT, offset: DEFAULT_OFFSET)
-      new(user, limit: limit, offset: offset).call
+    def self.call(user, limit: DEFAULT_LIMIT, offset: DEFAULT_OFFSET, filters: DEFAULT_FILTERS)
+      new(user, limit: limit, offset: offset, filters: filters).call
     end
 
-    def initialize(user, limit: DEFAULT_LIMIT, offset: DEFAULT_OFFSET)
+    def initialize(user, limit: DEFAULT_LIMIT, offset: DEFAULT_OFFSET, filters: DEFAULT_FILTERS)
       @user = user
       @limit = limit
       @offset = offset
+      @filters = filters
     end
 
     # Main entry point:
@@ -22,7 +24,8 @@ module Recipes
     # These instance variables are later read in views via helpers or
     # small methods on the Recipe model (e.g. recipe.total_ingredients_count).
     def call
-      rows = Recipe.find_by_sql([ sql_query, user.id, limit, offset ])
+      sql, bindings = sql_query_with_bindings
+      rows = Recipe.find_by_sql([ sql ] + bindings)
 
       rows.map do |recipe|
         # Extra columns come back as attributes on the AR object.
@@ -46,12 +49,13 @@ module Recipes
 
     private
 
-    attr_reader :user, :limit, :offset
+    attr_reader :user, :limit, :offset, :filters
 
     # Single SQL query that:
     # - starts from recipes
     # - joins all recipe_ingredients for each recipe
     # - LEFT JOINs the current user's pantry_items on ingredient_id
+    # - applies optional filters on ratings, prep_time, and cook_time
     #
     # Because both RecipeIngredient and PantryItem reference Ingredient records
     # that were created using Ingredient.canonicalize, matching on ingredient_id
@@ -66,8 +70,29 @@ module Recipes
     # - recipes with more matches first (best fit),
     # - for equal matches, fewer missing ingredients first,
     # - finally by recipe id for stable ordering.
-    def sql_query
-      <<~SQL
+    def sql_query_with_bindings
+      where_conditions = []
+      bindings = [ user.id ]
+
+      # Apply filters if present
+      if filters[:min_rating].present?
+        where_conditions << "recipes.ratings >= ?"
+        bindings << filters[:min_rating]
+      end
+
+      if filters[:max_prep_time].present?
+        where_conditions << "recipes.prep_time <= ?"
+        bindings << filters[:max_prep_time]
+      end
+
+      if filters[:max_cook_time].present?
+        where_conditions << "recipes.cook_time <= ?"
+        bindings << filters[:max_cook_time]
+      end
+
+      where_clause = where_conditions.any? ? "WHERE #{where_conditions.join(' AND ')}" : ""
+
+      sql = <<~SQL
         SELECT
           recipes.*,
           COUNT(DISTINCT ri_all.id) AS total_ingredients_count,
@@ -92,6 +117,7 @@ module Recipes
         LEFT JOIN pantry_items AS pi
           ON pi.ingredient_id = ri_all.ingredient_id
          AND pi.user_id = ?
+        #{where_clause}
         GROUP BY recipes.id
         ORDER BY
           matched_ingredients_count DESC,
@@ -99,6 +125,11 @@ module Recipes
           recipes.id ASC
         LIMIT ? OFFSET ?
       SQL
+
+      bindings << limit
+      bindings << offset
+
+      [ sql, bindings ]
     end
   end
 end

@@ -26,5 +26,7 @@ Rails.application.routes.draw do
     end
   end
 
+  resources :cooked_recipes, only: [ :index ]
+
   get "ingredients/search", to: "ingredients#search", as: :ingredients_search
 end

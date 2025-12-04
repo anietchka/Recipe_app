@@ -22,6 +22,38 @@ body {
   padding: 2rem 1rem;
 }
 
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  padding: 12px 1rem;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E8E8E8;
+  margin-bottom: 0;
+}
+
+.navbar__link {
+  text-decoration: none;
+  color: #333;
+  padding: 6px 0;
+  font-size: 1rem;
+  font-weight: 400;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.navbar__link:hover {
+  color: #7BA272;
+}
+
+.navbar__link.active {
+  font-weight: 600;
+  color: #7BA272;
+  border-bottom: 2px solid #7BA272;
+}
+
 /* Headings */
 h1 {
   color: #7A5E47;
@@ -134,6 +166,39 @@ h2 {
   font-size: 0.875rem;
   color: #666;
   font-style: italic;
+}
+
+/* Recipes filters form */
+.recipes-filters {
+  background-color: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.recipes-filters__fields {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.recipes-filters__fields .field {
+  flex: 1;
+  min-width: 150px;
+  margin-bottom: 0;
+}
+
+.recipes-filters__fields .field:last-child {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.recipes-filters__fields .field:last-child .btn {
+  margin: 0;
 }
 
 /* Buttons */
@@ -1252,13 +1317,13 @@ table form .btn {
   background-color: #f9f9f9;
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   gap: 1rem;
 }
 
 .recipe-show-actions__primary {
-  text-align: right;
+  text-align: center;
   flex: 1;
 }
 
@@ -1274,7 +1339,7 @@ table form .btn {
 .recipe-show-cook-form {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: 0.5rem;
 }
 

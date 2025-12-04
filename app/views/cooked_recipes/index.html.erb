@@ -1,0 +1,16 @@
+<div class="recipes-header">
+  <p class="recipes-header__description"><%= t(".description") %></p>
+</div>
+
+<% if @recipes_presenter.any? %>
+  <div class="recipes-container">
+    <% @recipes_presenter.each do |recipe| %>
+      <%= render "recipes/recipe_card", recipe: recipe %>
+    <% end %>
+  </div>
+<% else %>
+  <div class="empty-state">
+    <p><%= t(".no_cooked_recipes") %></p>
+    <%= link_to t(".find_recipes"), recipes_path, class: "btn" %>
+  </div>
+<% end %>

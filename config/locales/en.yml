@@ -29,6 +29,10 @@
 
 en:
   hello: "Hello world"
+  navbar:
+    pantry: "Pantry"
+    recipes: "Recipes"
+    history: "History"
   pantry_items:
     index:
       title: "My Pantry"
@@ -106,6 +110,15 @@ en:
       status_ready: "Ready to cook"
       status_almost: "Almost there"
       status_shopping: "Needs shopping"
+      filters:
+        min_rating: "Minimum rating"
+        min_rating_placeholder: "e.g. 4.0"
+        max_prep_time: "Max prep time (minutes)"
+        max_prep_time_placeholder: "e.g. 30"
+        max_cook_time: "Max cook time (minutes)"
+        max_cook_time_placeholder: "e.g. 60"
+        filter_button: "Filter"
+        clear: "Clear"
     show:
       back_to_recipes: "Back to Recipes"
       prep_time: "Prep: %{minutes} min"
@@ -131,3 +144,11 @@ en:
     cook:
       success: "Recipe cooked successfully! Your pantry has been updated."
       error: "Failed to cook recipe. Please try again."
+  cooked_recipes:
+    index:
+      title: "Cooked Recipes"
+      description: "Your cooking history."
+      cooked_on: "Cooked on %{date}"
+      no_cooked_recipes: "You haven't cooked any recipes yet. Start cooking to see your history here!"
+      back_to_pantry: "Back to Pantry"
+      find_recipes: "Find Recipes"

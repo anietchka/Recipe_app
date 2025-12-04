@@ -6,7 +6,8 @@ class RecipesController < ApplicationController
     per_page = 20
     offset = (page - 1) * per_page
 
-    recipes = Recipes::Finder.call(current_user, limit: per_page, offset: offset)
+    filters = build_filters
+    recipes = Recipes::Finder.call(current_user, limit: per_page, offset: offset, filters: filters)
     @recipes_presenter = Recipes::RecipesPresenter.new(recipes, current_user, page: page, per_page: per_page)
   end
 
@@ -26,5 +27,13 @@ class RecipesController < ApplicationController
 
   def set_recipe
     @recipe = Recipe.find(params[:id])
+  end
+
+  def build_filters
+    filters = {}
+    filters[:min_rating] = params[:min_rating].to_f if params[:min_rating].present?
+    filters[:max_prep_time] = params[:max_prep_time].to_i if params[:max_prep_time].present?
+    filters[:max_cook_time] = params[:max_cook_time].to_i if params[:max_cook_time].present?
+    filters
   end
 end
