@@ -56,6 +56,7 @@ This project was developed using **Cursor** (an AI-powered code editor) for:
 - **Fraction handling** - Mathematical operations and conversions for fractional quantities
 - **Test dictation** - Writing test cases following TDD practices
 - **Tab completion** - Code suggestions and autocompletion during development
+- **Commit messages** - Writing clear and descriptive commit messages
 
 All generated code has been reviewed, refactored, and integrated following Rails best practices and the project's architectural decisions (e.g., using presenters to separate concerns).
 

@@ -72,6 +72,6 @@ ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 # Puma will read PORT from environment (see config/puma.rb)
 EXPOSE 8080
 
-# Start server via Thruster (which wraps Puma)
-# Thruster will use Puma which reads PORT from ENV (Fly.io sets PORT=8080)
-CMD ["./bin/thrust", "./bin/rails", "server"]
+# Start server via Rails server (Puma)
+# Puma reads PORT from ENV (Fly.io sets PORT=8080)
+CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
