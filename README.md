@@ -56,6 +56,7 @@ This project was developed using **Cursor** (an AI-powered code editor) for:
 - **Fraction handling** - Mathematical operations and conversions for fractional quantities
 - **Test dictation** - Writing test cases following TDD practices
 - **Tab completion** - Code suggestions and autocompletion during development
+- **Commit messages** - Writing clear and descriptive commit messages
 
 All generated code has been reviewed, refactored, and integrated following Rails best practices and the project's architectural decisions (e.g., using presenters to separate concerns).
 
@@ -358,35 +359,39 @@ rails recipes:import
 
 ## 🚀 Deployment
 
-The application is configured for deployment with **Kamal** (formerly MRSK). For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+The application is configured for deployment with **Fly.io**. For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-### Quick Start for OVH Deployment
+### Quick Start for Fly.io Deployment
 
-1. **Prepare your server:**
-   - Install Docker on your OVH server
-   - Configure firewall (ports 22, 80, 443)
-   - Point your domain to the server IP
-
-2. **Configure Kamal:**
-   - Copy `config/deploy.yml.example` to `config/deploy.yml`
-   - Update with your server IP, domain, and Docker Hub credentials
-   - Copy `.kamal/secrets.example` to `.kamal/secrets`
-   - Fill in your secrets (RAILS_MASTER_KEY, database passwords, etc.)
-
-3. **Deploy:**
+1. **Install Fly.io CLI:**
    ```bash
-   kamal build
-   kamal app setup
-   kamal deploy
+   curl -L https://fly.io/install.sh | sh
+   fly auth login
    ```
 
-4. **Import recipes:**
+2. **Initialize and deploy:**
    ```bash
-   kamal console
-   # Then: system("rails recipes:download && rails recipes:import")
+   # Initialize Fly.io app (creates fly.toml)
+   fly launch
+   
+   # Create PostgreSQL database
+   fly postgres create --name recipe-app-db
+   fly postgres attach --app recipe-app recipe-app-db
+   
+   # Set secrets
+   fly secrets set RAILS_MASTER_KEY="$(cat config/master.key)"
+   
+   # Deploy
+   fly deploy
    ```
 
-For complete deployment instructions, troubleshooting, and best practices, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+3. **Import recipes:**
+   ```bash
+   fly ssh console -C "cd /rails && bin/rails recipes:download"
+   fly ssh console -C "cd /rails && bin/rails recipes:import"
+   ```
+
+For complete deployment instructions, troubleshooting, scaling, and best practices, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## 🤝 Contributing
 
