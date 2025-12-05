@@ -43,3 +43,6 @@
 # Large data files (downloaded via rake task)
 db/data/recipes-en.json
 db/data/recipes-en.json.gz
+
+# Kamal secrets file - contains sensitive credentials
+.kamal/secrets
