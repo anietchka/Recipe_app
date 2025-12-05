@@ -1,13 +1,13 @@
 service: recipe_app
 
-image: annabozio/recipe_app
+image: anietchka/recipe_app
 
 servers:
   web:
     - 51.75.28.226
 
 registry:
-  server: https://index.docker.io/v1/
+  server: registry-1.docker.io
   username: <%= ENV["DOCKERHUB_USERNAME"] %>
   password: <%= ENV["DOCKERHUB_PASSWORD"] %>
 
@@ -17,7 +17,6 @@ env:
   secret:
     - RAILS_MASTER_KEY
     - DATABASE_URL
-
 
 builder:
   context: .
