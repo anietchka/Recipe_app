@@ -17,7 +17,13 @@ env:
   secret:
     - RAILS_MASTER_KEY
     - DATABASE_URL
+  # DATABASE_URL will be set from .kamal/secrets if defined, otherwise use fallback in database.yml
 
 builder:
   context: .
   arch: amd64
+
+# Proxy configuration (Traefik)
+proxy:
+  host: 51.75.28.226
+  ssl: false
