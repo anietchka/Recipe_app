@@ -566,4 +566,45 @@ class RecipeTest < ActiveSupport::TestCase
     assert_equal recipe, cooked_recipe.recipe
     assert_not_nil cooked_recipe.cooked_at
   end
+
+  test "cook! updates existing CookedRecipe instead of creating duplicate" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    recipe = Recipe.create!(title: "Simple Pasta")
+    RecipeIngredient.create!(
+      recipe: recipe,
+      ingredient: pasta,
+      quantity: 200.0,
+      unit: "g",
+      original_text: "200g pasta"
+    )
+
+    PantryItem.create!(
+      user: user,
+      ingredient: pasta,
+      quantity: 1000.0,
+      unit: "g"
+    )
+
+    # First cook
+    old_time = 2.days.ago
+    cooked_recipe = CookedRecipe.create!(
+      user: user,
+      recipe: recipe,
+      cooked_at: old_time
+    )
+
+    # Cook again - should update existing record, not create new one
+    assert_no_difference "CookedRecipe.count" do
+      recipe.cook!(user)
+    end
+
+    cooked_recipe.reload
+    assert_equal user, cooked_recipe.user
+    assert_equal recipe, cooked_recipe.recipe
+    # cooked_at should be updated to current time
+    assert cooked_recipe.cooked_at > old_time
+    assert cooked_recipe.cooked_at <= Time.current
+  end
 end

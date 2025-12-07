@@ -25,13 +25,16 @@ class Recipe < ApplicationRecord
   # - Handles fractions in both recipe_ingredient and pantry_item
   # - Never goes below 0
   # - Ignores ingredients not in the user's pantry
-  # - Creates a CookedRecipe record for the user
+  # - Creates or updates a CookedRecipe record for the user
+  #   If the recipe was already cooked, updates cooked_at to move it to the top of history
   def cook!(user)
     recipe_ingredients.each do |recipe_ingredient|
       decrement_pantry_item_for_ingredient(recipe_ingredient, user)
     end
 
-    CookedRecipe.create!(user: user, recipe: self)
+    cooked_recipe = CookedRecipe.find_or_initialize_by(user: user, recipe: self)
+    cooked_recipe.cooked_at = Time.current
+    cooked_recipe.save!
   end
 
   private
