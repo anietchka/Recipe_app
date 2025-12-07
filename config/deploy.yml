@@ -25,5 +25,8 @@ builder:
 
 # Proxy configuration (Traefik)
 proxy:
-  host: 51.75.28.226
-  ssl: false
+  host: recipes.bozio.fr
+  ssl:
+    lets_encrypt:
+      email: anna.bozio@gmail.com  # Replace with your email
+    redirect_http: true  # Automatically redirect HTTP to HTTPS
