@@ -75,7 +75,7 @@ class RecipeTest < ActiveSupport::TestCase
     assert_equal 3.0, eggs_item.quantity
   end
 
-  test "cook! does not decrement below zero with insufficient quantity" do
+  test "cook! removes pantry item when quantity reaches zero" do
     user = User.create!(email: "demo@example.com")
     pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
 
@@ -97,9 +97,9 @@ class RecipeTest < ActiveSupport::TestCase
 
     recipe.cook!(user)
 
+    # Pantry item should be deleted when quantity reaches zero
     pasta_item = PantryItem.find_by(user: user, ingredient: pasta)
-    assert_nil pasta_item.quantity
-    assert_nil pasta_item.fraction
+    assert_nil pasta_item
   end
 
   test "cook! ignores ingredients not in pantry" do
@@ -291,7 +291,7 @@ class RecipeTest < ActiveSupport::TestCase
     assert_equal "1/4", sugar_item.fraction
   end
 
-  test "cook! handles fraction when pantry item has only fraction" do
+  test "cook! removes pantry item when fraction reaches zero" do
     user = User.create!(email: "demo@example.com")
     oil = Ingredient.create!(name: "Oil", canonical_name: "oil")
 
@@ -313,11 +313,10 @@ class RecipeTest < ActiveSupport::TestCase
 
     recipe.cook!(user)
 
-    oil_item = PantryItem.find_by(user: user, ingredient: oil)
     # 2/3 - 1 1/3 = 0.666... - 1.333... = -0.666... -> 0 (ne peut pas être négatif)
-    # When quantity becomes 0, it should be nil (base ingredient)
-    assert_nil oil_item.quantity
-    assert_nil oil_item.fraction
+    # When quantity becomes 0, pantry item should be deleted
+    oil_item = PantryItem.find_by(user: user, ingredient: oil)
+    assert_nil oil_item
   end
 
   test "missing_ingredients_for returns ingredients not in user pantry with full quantity" do

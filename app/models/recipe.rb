@@ -61,7 +61,12 @@ class Recipe < ApplicationRecord
     new_quantity_total = [ current_quantity - required_in_pantry_unit, 0.0 ].max
     new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
 
-    pantry_item.update!(quantity: new_quantity, fraction: new_fraction)
+    # If quantity reaches zero, delete the pantry item instead of keeping it with nil quantity
+    if new_quantity.nil? && new_fraction.nil?
+      pantry_item.destroy!
+    else
+      pantry_item.update!(quantity: new_quantity, fraction: new_fraction)
+    end
   end
 
   def calculate_missing_for_ingredient(recipe_ingredient, user)
