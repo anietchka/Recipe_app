@@ -16,10 +16,19 @@ module Recipes
     end
 
     # Main entry point:
-    # returns a list of Recipe records, each enriched with:
+    # returns a list of Recipe records, each enriched with calculated attributes via SQL:
     # - @total_ingredients_count
     # - @matched_ingredients_count
     # - @missing_ingredients_count
+    #
+    # PERFORMANCE NOTE:
+    # This implementation uses a highly optimized single SQL query to join recipes,
+    # ingredients and user pantry items. It computes scores (matched/missing counts)
+    # directly in the database using aggregation (GROUP BY).
+    #
+    # This ensures O(1) memory usage in Ruby regardless of the number of recipes,
+    # avoiding the N+1 query problem typical of simple ActiveRecord iterations.
+    # It scales well to thousands of recipes.
     #
     # These instance variables are later read in views via helpers or
     # small methods on the Recipe model (e.g. recipe.total_ingredients_count).
