@@ -29,11 +29,30 @@
         </div>
       <% end %>
 
-      <div class="field">
+      <div
+        class="field"
+        data-controller="autocomplete"
+        data-action="click@window->autocomplete#handleClickOutside"
+      >
         <%= form.label :ingredient_name, t("pantry_items.index.ingredient") %>
-        <%= form.text_field :ingredient_name, id: "ingredient-name-input", autocomplete: "off", placeholder: t("pantry_items.index.ingredient_placeholder"), required: true, data: { search_url: ingredients_search_path }, autofocus: true %>
 
-        <div id="ingredient-suggestions" class="suggestions hidden"></div>
+        <%= form.text_field :ingredient_name, 
+            id: "ingredient-name-input", 
+            autocomplete: "off", 
+            placeholder: t("pantry_items.index.ingredient_placeholder"), 
+            required: true, 
+            autofocus: true,
+            data: {
+              autocomplete_target: "input",
+              autocomplete_search_url_value: ingredients_search_path
+            },
+            "data-action": "input->autocomplete#search keydown->autocomplete#handleKeydown blur->autocomplete#handleBlur" %>
+
+        <div
+          id="ingredient-suggestions"
+          class="suggestions hidden"
+          data-autocomplete-target="suggestions"
+        ></div>
       </div>
 
       <div class="field">
