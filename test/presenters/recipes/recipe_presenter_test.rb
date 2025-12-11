@@ -165,7 +165,8 @@ module Recipes
     end
 
     test "missing_count uses precalculated value when available" do
-      @recipe.missing_ingredients_count = 2
+      @recipe.instance_variable_set(:@attributes, @recipe.attributes.merge("missing_ingredients_count" => 2))
+      @recipe.instance_variable_set(:@missing_ingredients_count, nil) # Reset cache
       assert_equal 2, @presenter.missing_count
     end
 
@@ -180,7 +181,8 @@ module Recipes
     end
 
     test "matched_ingredients uses precalculated value when available" do
-      @recipe.matched_ingredients_count = 3
+      @recipe.instance_variable_set(:@attributes, @recipe.attributes.merge("matched_ingredients_count" => 3))
+      @recipe.instance_variable_set(:@matched_ingredients_count, nil) # Reset cache
       assert_equal 3, @presenter.matched_ingredients
     end
 
