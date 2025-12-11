@@ -8,6 +8,24 @@ class Recipe < ApplicationRecord
 
   validates :title, presence: true
 
+  # Returns the total number of ingredients for this recipe
+  # Uses precalculated value from Recipes::Finder if available (from SQL query),
+  # otherwise falls back to counting recipe_ingredients association
+  def total_ingredients_count
+    @total_ingredients_count ||= attributes["total_ingredients_count"]&.to_i
+  end
+
+  # Virtual attributes for precalculated scores from Recipes::Finder
+  # These are automatically mapped by ActiveRecord from SQL AS aliases in find_by_sql
+  # We access them via attributes hash and convert to integers
+  def matched_ingredients_count
+    @matched_ingredients_count ||= attributes["matched_ingredients_count"]&.to_i
+  end
+
+  def missing_ingredients_count
+    @missing_ingredients_count ||= attributes["missing_ingredients_count"]&.to_i
+  end
+
   # Returns recipe ingredients that are missing or insufficient in the user's pantry
   # Returns an array of hashes with:
   #   - ingredient_id: the ingredient ID

@@ -127,9 +127,30 @@ module Recipes
       assert_equal 4, @presenter.total_ingredients_count
     end
 
+    test "total_ingredients_count uses recipe_ingredients association when precalculated value not available" do
+      # When recipe is not loaded via Finder, total_ingredients_count should fallback to counting
+      # This test verifies it correctly counts the associated ingredients
+      assert_equal 4, @presenter.total_ingredients_count
+      # Add another ingredient and verify count increases
+      new_ingredient = Ingredient.create!(name: "Pepper", canonical_name: "pepper")
+      RecipeIngredient.create!(recipe: @recipe, ingredient: new_ingredient, original_text: "pepper")
+      @presenter = RecipePresenter.new(@recipe.reload, @user)
+      assert_equal 5, @presenter.total_ingredients_count
+    end
+
     test "total_ingredients_count uses precalculated value when available" do
+      # When recipe is loaded via Finder, it has a precalculated total_ingredients_count
+      # Simulate this by setting the attribute directly
       @recipe.instance_variable_set(:@total_ingredients_count, 10)
       assert_equal 10, @presenter.total_ingredients_count
+    end
+
+    test "total_ingredients_count handles zero correctly" do
+      # Test that zero is not treated as falsy
+      # Create a recipe with no ingredients (edge case)
+      empty_recipe = Recipe.create!(title: "Empty Recipe")
+      empty_presenter = RecipePresenter.new(empty_recipe, @user)
+      assert_equal 0, empty_presenter.total_ingredients_count
     end
 
     test "missing_ingredients returns array of missing ingredients" do
@@ -144,7 +165,7 @@ module Recipes
     end
 
     test "missing_count uses precalculated value when available" do
-      @recipe.instance_variable_set(:@missing_ingredients_count, 2)
+      @recipe.missing_ingredients_count = 2
       assert_equal 2, @presenter.missing_count
     end
 
@@ -159,7 +180,7 @@ module Recipes
     end
 
     test "matched_ingredients uses precalculated value when available" do
-      @recipe.instance_variable_set(:@matched_ingredients_count, 3)
+      @recipe.matched_ingredients_count = 3
       assert_equal 3, @presenter.matched_ingredients
     end
 

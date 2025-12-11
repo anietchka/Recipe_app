@@ -62,18 +62,19 @@ module Recipes
     end
 
     def total_ingredients_count
-      # Use precalculated value from Recipes::Finder if available, otherwise count
-      recipe.instance_variable_get(:@total_ingredients_count) || recipe_ingredients.count
+      # Uses precalculated value from Recipes::Finder if available, otherwise counts
+      count = recipe.total_ingredients_count
+      count.nil? ? recipe_ingredients.count : count
     end
 
     def matched_ingredients
       # Use precalculated value from Recipes::Finder if available
-      recipe.instance_variable_get(:@matched_ingredients_count) || (total_ingredients_count - missing_count)
+      recipe.matched_ingredients_count || (total_ingredients_count - missing_count)
     end
 
     def missing_count
       # Use precalculated value from Recipes::Finder if available
-      recipe.instance_variable_get(:@missing_ingredients_count) || missing_ingredients.count
+      recipe.missing_ingredients_count || missing_ingredients.count
     end
 
     def no_available_ingredients?
