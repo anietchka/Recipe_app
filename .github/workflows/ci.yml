@@ -99,6 +99,7 @@ jobs:
       - name: Setup test database
         env:
           RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         run: bin/rails db:test:prepare
 
       - name: Run tests
@@ -155,6 +156,7 @@ jobs:
       - name: Setup test database
         env:
           RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
         run: bin/rails db:test:prepare
 
       - name: Run System Tests
