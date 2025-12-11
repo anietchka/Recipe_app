@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-# This Dockerfile is designed for production deployment with Fly.io or Kamal.
+# This Dockerfile is designed for production deployment with Kamal.
 # For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version
@@ -68,10 +68,10 @@ COPY --chown=rails:rails --from=build /rails /rails
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Expose port (Fly.io uses PORT env var, defaults to 8080)
-# Puma will read PORT from environment (see config/puma.rb)
+# Expose port (Puma will read PORT from environment, defaults to 8080)
+# See config/puma.rb for port configuration
 EXPOSE 8080
 
 # Start server via Rails server (Puma)
-# Puma reads PORT from ENV (Fly.io sets PORT=8080)
+# Puma reads PORT from ENV
 CMD ["./bin/rails", "server", "-b", "0.0.0.0"]

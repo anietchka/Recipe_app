@@ -355,43 +355,41 @@ rails recipes:import
 ## 📚 Additional documentation
 
 - **Recipe Import** : See [docs/RECIPES_DATA_SETUP.md](docs/RECIPES_DATA_SETUP.md) for details on importing recipes
-- **Deployment** : See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for a complete guide on deploying to production with Kamal
+- **Deployment** : Configure `config/deploy.yml` for your server and use Kamal to deploy
 
 ## 🚀 Deployment
 
-The application is configured for deployment with **Fly.io**. For detailed deployment instructions, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+The application is configured for deployment with **Kamal** (formerly MRSK).
 
-### Quick Start for Fly.io Deployment
+### Quick Start for OVH Deployment
 
-1. **Install Fly.io CLI:**
+1. **Prepare your server:**
+   - Install Docker on your OVH server
+   - Configure firewall (ports 22, 80, 443)
+   - Point your domain to the server IP
+
+2. **Configure Kamal:**
+   - Update `config/deploy.yml` with your server IP, domain, and Docker Hub credentials
+   - Copy `.kamal/secrets.example` to `.kamal/secrets` (if needed)
+   - Fill in your secrets (RAILS_MASTER_KEY, DATABASE_URL, etc.)
+
+3. **Set Docker Hub credentials:**
    ```bash
-   curl -L https://fly.io/install.sh | sh
-   fly auth login
+   export DOCKERHUB_USERNAME=your_username
+   export DOCKERHUB_PASSWORD=your_token
    ```
 
-2. **Initialize and deploy:**
+4. **Deploy:**
    ```bash
-   # Initialize Fly.io app (creates fly.toml)
-   fly launch
-   
-   # Create PostgreSQL database
-   fly postgres create --name recipe-app-db
-   fly postgres attach --app recipe-app recipe-app-db
-   
-   # Set secrets
-   fly secrets set RAILS_MASTER_KEY="$(cat config/master.key)"
-   
-   # Deploy
-   fly deploy
+   kamal build push    # Build and push image to Docker Hub
+   kamal deploy        # Deploy application
    ```
 
-3. **Import recipes:**
+5. **Import recipes:**
    ```bash
-   fly ssh console -C "cd /rails && bin/rails recipes:download"
-   fly ssh console -C "cd /rails && bin/rails recipes:import"
+   kamal app exec "rails recipes:download"
+   kamal app exec "rails recipes:import"
    ```
-
-For complete deployment instructions, troubleshooting, scaling, and best practices, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ## 🤝 Contributing
 
