@@ -92,12 +92,15 @@ test:
 production:
   primary: &primary_production
     <<: *default
-    # Fly.io provides DATABASE_URL automatically when PostgreSQL is attached
-    # Rails will use DATABASE_URL if present, otherwise fall back to these settings
-    url: <%= ENV.fetch("DATABASE_URL") { "postgresql://recipe_app:#{ENV['RECIPE_APP_DATABASE_PASSWORD']}@#{ENV.fetch('DB_HOST', 'localhost')}/recipe_app_production" } %>
+    <% if ENV["DATABASE_URL"] && !ENV["DATABASE_URL"].empty? %>
+    url: <%= ENV["DATABASE_URL"] %>
+    <% else %>
     database: recipe_app_production
+    host: <%= ENV.fetch("DB_HOST", "localhost") %>
+    port: <%= ENV.fetch("DB_PORT", "5432") %>
     username: recipe_app
     password: <%= ENV["RECIPE_APP_DATABASE_PASSWORD"] %>
+    <% end %>
   cache:
     <<: *primary_production
     # Use same database URL but with different database name for cache

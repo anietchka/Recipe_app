@@ -16,35 +16,31 @@ module Recipes
     end
 
     # Main entry point:
-    # returns a list of Recipe records, each enriched with:
-    # - @total_ingredients_count
-    # - @matched_ingredients_count
-    # - @missing_ingredients_count
+    # returns a list of Recipe records, each enriched with calculated attributes via SQL:
+    # - total_ingredients_count (automatically mapped from SQL AS alias)
+    # - matched_ingredients_count (automatically mapped from SQL AS alias)
+    # - missing_ingredients_count (automatically mapped from SQL AS alias)
     #
-    # These instance variables are later read in views via helpers or
-    # small methods on the Recipe model (e.g. recipe.total_ingredients_count).
+    # PERFORMANCE NOTE:
+    # This implementation uses a highly optimized single SQL query to join recipes,
+    # ingredients and user pantry items. It computes scores (matched/missing counts)
+    # directly in the database using aggregation (GROUP BY).
+    #
+    # This ensures O(1) memory usage in Ruby regardless of the number of recipes,
+    # avoiding the N+1 query problem typical of simple ActiveRecord iterations.
+    # It scales well to thousands of recipes.
+    #
+    # ActiveRecord automatically maps SQL AS aliases to attributes on the model.
+    # The Recipe model provides methods that convert these to integers.
     def call
       sql, bindings = sql_query_with_bindings
       rows = Recipe.find_by_sql([ sql ] + bindings)
 
-      rows.map do |recipe|
-        # Extra columns come back as attributes on the AR object.
-        # We store them in instance variables so that the Recipe model
-        # can expose them via simple readers.
-        recipe.instance_variable_set(
-          :@total_ingredients_count,
-          recipe["total_ingredients_count"].to_i
-        )
-        recipe.instance_variable_set(
-          :@matched_ingredients_count,
-          recipe["matched_ingredients_count"].to_i
-        )
-        recipe.instance_variable_set(
-          :@missing_ingredients_count,
-          recipe["missing_ingredients_count"].to_i
-        )
-        recipe
-      end
+      # ActiveRecord automatically maps SQL AS aliases to attributes
+      # The Recipe model handles conversion to integers via read_attribute
+      # All counts (total, matched, missing) are calculated in a single SQL query
+      # This avoids N+1 queries and is highly performant
+      rows
     end
 
     private

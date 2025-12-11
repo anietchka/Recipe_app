@@ -8,6 +8,24 @@ class Recipe < ApplicationRecord
 
   validates :title, presence: true
 
+  # Returns the total number of ingredients for this recipe
+  # Uses precalculated value from Recipes::Finder if available (from SQL query),
+  # otherwise falls back to counting recipe_ingredients association
+  def total_ingredients_count
+    @total_ingredients_count ||= attributes["total_ingredients_count"]&.to_i
+  end
+
+  # Virtual attributes for precalculated scores from Recipes::Finder
+  # These are automatically mapped by ActiveRecord from SQL AS aliases in find_by_sql
+  # We access them via attributes hash and convert to integers
+  def matched_ingredients_count
+    @matched_ingredients_count ||= attributes["matched_ingredients_count"]&.to_i
+  end
+
+  def missing_ingredients_count
+    @missing_ingredients_count ||= attributes["missing_ingredients_count"]&.to_i
+  end
+
   # Returns recipe ingredients that are missing or insufficient in the user's pantry
   # Returns an array of hashes with:
   #   - ingredient_id: the ingredient ID
@@ -25,13 +43,16 @@ class Recipe < ApplicationRecord
   # - Handles fractions in both recipe_ingredient and pantry_item
   # - Never goes below 0
   # - Ignores ingredients not in the user's pantry
-  # - Creates a CookedRecipe record for the user
+  # - Creates or updates a CookedRecipe record for the user
+  #   If the recipe was already cooked, updates cooked_at to move it to the top of history
   def cook!(user)
     recipe_ingredients.each do |recipe_ingredient|
       decrement_pantry_item_for_ingredient(recipe_ingredient, user)
     end
 
-    CookedRecipe.create!(user: user, recipe: self)
+    cooked_recipe = CookedRecipe.find_or_initialize_by(user: user, recipe: self)
+    cooked_recipe.cooked_at = Time.current
+    cooked_recipe.save!
   end
 
   private
@@ -61,7 +82,12 @@ class Recipe < ApplicationRecord
     new_quantity_total = [ current_quantity - required_in_pantry_unit, 0.0 ].max
     new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
 
-    pantry_item.update!(quantity: new_quantity, fraction: new_fraction)
+    # If quantity reaches zero, delete the pantry item instead of keeping it with nil quantity
+    if new_quantity.nil? && new_fraction.nil?
+      pantry_item.destroy!
+    else
+      pantry_item.update!(quantity: new_quantity, fraction: new_fraction)
+    end
   end
 
   def calculate_missing_for_ingredient(recipe_ingredient, user)

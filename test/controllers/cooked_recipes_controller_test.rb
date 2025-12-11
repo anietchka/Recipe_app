@@ -68,6 +68,26 @@ class CookedRecipesControllerTest < ActionDispatch::IntegrationTest
     assert recipe2_index < recipe1_index, "Most recent recipe should appear first"
   end
 
+  test "cooking a recipe again moves it to the top of history" do
+    # Cook recipe1 again (it was cooked 2 days ago)
+    @recipe1.cook!(@user)
+
+    get cooked_recipes_url
+    assert_response :success
+
+    # recipe1 should now appear first (most recent)
+    body = response.body
+    recipe1_index = body.index(@recipe1.title)
+    recipe2_index = body.index(@recipe2.title)
+
+    assert_not_nil recipe1_index
+    assert_not_nil recipe2_index
+    assert recipe1_index < recipe2_index, "Recipe1 should appear first after being cooked again"
+
+    # Should still have only 2 recipes (no duplicates)
+    assert_select ".recipe-card", count: 2
+  end
+
   test "index should only show cooked recipes for current user" do
     other_user = User.create!(email: "other@example.com")
     other_recipe = Recipe.create!(title: "Other Recipe")

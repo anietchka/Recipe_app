@@ -52,10 +52,10 @@ module Recipes
 
       recipe1 = recipes.find { |r| r.id == @recipe1.id }
       assert_not_nil recipe1
-      # Check precalculated scores via instance variables
-      assert_equal 2, recipe1.instance_variable_get(:@matched_ingredients_count)
-      assert_equal 2, recipe1.instance_variable_get(:@total_ingredients_count)
-      assert_equal 0, recipe1.instance_variable_get(:@missing_ingredients_count)
+      # Check precalculated scores (all counts are from SQL query for performance)
+      assert_equal 2, recipe1.matched_ingredients_count
+      assert_equal 2, recipe1.total_ingredients_count # Precalculated from SQL
+      assert_equal 0, recipe1.missing_ingredients_count
     end
 
     test "supports pagination with limit and offset" do

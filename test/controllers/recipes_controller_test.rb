@@ -93,7 +93,7 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
     assert_equal 4.0, eggs_item.available_quantity
   end
 
-  test "cook should handle recipe with insufficient ingredients" do
+  test "cook should remove pantry item when quantity reaches zero" do
     # Reduce pasta to less than required
     pasta_item = @user.pantry_items.find_by(ingredient: @pasta)
     pasta_item.update!(quantity: 100.0, fraction: nil)
@@ -101,10 +101,10 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
     post cook_recipe_url(@recipe)
 
     assert_redirected_to pantry_items_url
-    pasta_item.reload
 
-    # Should not go below 0
-    assert_equal 0.0, pasta_item.available_quantity
+    # Pantry item should be deleted when quantity reaches zero
+    pasta_item = PantryItem.find_by(user: @user, ingredient: @pasta)
+    assert_nil pasta_item
   end
 
   test "cook should ignore ingredients not in pantry" do
