@@ -62,10 +62,6 @@ development:
 test:
   <<: *default
   database: recipe_app_test
-  host: localhost
-  port: 5432
-  username: postgres
-  password: postgres
 
 # As with config/credentials.yml, you never want to store sensitive information,
 # like your database password, in your source code. If your source code is
@@ -107,19 +103,13 @@ production:
     <% end %>
   cache:
     <<: *primary_production
-    # Use same database URL but with different database name for cache
-    url: <%= ENV.fetch("CACHE_DATABASE_URL") { (db_url = ENV["DATABASE_URL"]) ? db_url.sub(/\/[^\/]+$/, "/recipe_app_production_cache") : nil } %>
     database: recipe_app_production_cache
     migrations_paths: db/cache_migrate
   queue:
     <<: *primary_production
-    # Use same database URL but with different database name for queue
-    url: <%= ENV.fetch("QUEUE_DATABASE_URL") { (db_url = ENV["DATABASE_URL"]) ? db_url.sub(/\/[^\/]+$/, "/recipe_app_production_queue") : nil } %>
     database: recipe_app_production_queue
     migrations_paths: db/queue_migrate
   cable:
     <<: *primary_production
-    # Use same database URL but with different database name for cable
-    url: <%= ENV.fetch("CABLE_DATABASE_URL") { (db_url = ENV["DATABASE_URL"]) ? db_url.sub(/\/[^\/]+$/, "/recipe_app_production_cable") : nil } %>
     database: recipe_app_production_cable
     migrations_paths: db/cable_migrate
