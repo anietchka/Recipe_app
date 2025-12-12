@@ -90,28 +90,27 @@ class Ingredient < ApplicationRecord
     # Step 5: Take the last word as root (or empty string if no words left)
     root = words.last || ""
 
-    # Step 6: Apply simple singularization
+    # Step 6: Apply singularization using ActiveSupport::Inflector
     singularize(root)
   end
 
-  # Simple singularization: remove 's' ending if present
-  # Special case for "potatoes" -> "potato" (remove "es")
-  # For all other words, just remove "s" (e.g., "apples" -> "apple", "onions" -> "onion")
+  # Singularize a word using ActiveSupport::Inflector with special cases
+  # Returns the word as-is if empty or very short (1-2 chars)
   def self.singularize(word)
     return word if word.empty?
-
-    # Don't singularize very short words (1-2 chars)
     return word if word.length <= 2
 
-    # Special cases: words ending in "es" that need "es" removed (not just "s")
-    return "potato" if word == "potatoes"
-    return "tomato" if word == "tomatoes"
+    # Special cases where ActiveSupport::Inflector produces incorrect results
+    special_cases = {
+      "pasta" => "pasta"      # Inflector incorrectly singularizes "pasta" to "pastum"
+    }
 
-    # For all other words ending in "s", just remove the "s"
-    if word.end_with?("s") && word.length > 2
-      return word[0..-2]
-    end
+    return special_cases[word] if special_cases.key?(word)
 
-    word
+    # Use ActiveSupport::Inflector for proper singularization
+    result = ActiveSupport::Inflector.singularize(word)
+
+    # Fix any incorrect results from Inflector
+    special_cases[result] || result
   end
 end

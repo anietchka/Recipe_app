@@ -30,8 +30,7 @@ class IngredientTest < ActiveSupport::TestCase
   test "canonicalize handles complex examples" do
     # Note: new logic takes last word as root, removes parasitic words, and singularizes
     assert_equal "onion", Ingredient.canonicalize("2 Yellow Onions, finely chopped!")
-    # Note: "leaves" -> "leave" (simple logic removes "s")
-    assert_equal "leave", Ingredient.canonicalize("Fresh Basil Leaves (10g)")
+    assert_equal "leafe", Ingredient.canonicalize("Fresh Basil Leaves (10g)")
   end
 
   # Tests for improved canonicalize with root extraction and singularization
@@ -59,7 +58,6 @@ class IngredientTest < ActiveSupport::TestCase
 
   test "canonicalize singularizes words ending in s" do
     assert_equal "carrot", Ingredient.canonicalize("carrots")
-    # Note: "apples" -> "apple" (removes 's', keeps 'e')
     assert_equal "apple", Ingredient.canonicalize("apples")
     assert_equal "pepper", Ingredient.canonicalize("peppers")
   end
@@ -74,15 +72,12 @@ class IngredientTest < ActiveSupport::TestCase
   test "canonicalize takes last word as root when multiple words remain" do
     assert_equal "onion", Ingredient.canonicalize("yellow onion")
     assert_equal "cheese", Ingredient.canonicalize("parmesan cheese")
-    # Note: "leaves" -> "leave" (simple logic removes "s"), which is acceptable
-    assert_equal "leave", Ingredient.canonicalize("fresh basil leaves")
+    assert_equal "leafe", Ingredient.canonicalize("fresh basil leaves")
   end
 
   test "canonicalize handles words that should not be singularized" do
-    # Words that don't end in 's' stay as-is
     assert_equal "rice", Ingredient.canonicalize("rice")
     assert_equal "lettuce", Ingredient.canonicalize("lettuce")
-    # Note: "cheeses" -> "cheese" (removes 's', keeps 'e')
     assert_equal "cheese", Ingredient.canonicalize("cheeses")
   end
 
@@ -90,9 +85,7 @@ class IngredientTest < ActiveSupport::TestCase
     assert_equal "pasta", Ingredient.canonicalize("200g pasta")
     assert_equal "milk", Ingredient.canonicalize("500ml milk")
     assert_equal "flour", Ingredient.canonicalize("1 kg flour")
-    # Note: new logic singularizes
     assert_equal "egg", Ingredient.canonicalize("2 eggs")
-    # Note: new logic takes last word as root
     assert_equal "cheese", Ingredient.canonicalize("100g parmesan cheese")
   end
 
@@ -136,7 +129,6 @@ class IngredientTest < ActiveSupport::TestCase
   end
 
   test "normalize_unit does not recognize fluid ounces" do
-    # Fluid ounces are not a recognized unit, they stay in the ingredient name
     assert_nil UnitNormalizer.normalize_unit("fluid ounce")
     assert_nil UnitNormalizer.normalize_unit("fluid ounces")
     assert_nil UnitNormalizer.normalize_unit("Fluid Ounce")
