@@ -29,4 +29,3 @@ module QuantityCalculator
     numerator / denominator
   end
 end
-
