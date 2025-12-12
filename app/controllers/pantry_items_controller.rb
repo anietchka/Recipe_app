@@ -8,19 +8,12 @@ class PantryItemsController < ApplicationController
   end
 
   def create
-    service_params = {
-      ingredient_name: params[:pantry_item][:ingredient_name]&.strip,
-      quantity: params[:pantry_item][:quantity],
-      fraction: params[:pantry_item][:fraction],
-      unit: params[:pantry_item][:unit]
-    }
-
-    result = PantryItems::Create.call(current_user, service_params)
+    result = PantryItems::Create.call(current_user, pantry_item_params.to_h.symbolize_keys)
 
     if result.success?
       redirect_to pantry_items_path, notice: t(".success")
     else
-      pantry_item = result.pantry_item || current_user.pantry_items.build(pantry_item_params)
+      pantry_item = result.pantry_item || current_user.pantry_items.build(pantry_item_params.except(:ingredient_name))
       result.errors.each { |key, message| pantry_item.errors.add(key, message) }
       @pantry_items_presenter = PantryItems::PantryItemsPresenter.new(current_user, pantry_item: pantry_item)
       render :index, status: :unprocessable_entity
@@ -77,7 +70,7 @@ class PantryItemsController < ApplicationController
   end
 
   def pantry_item_params
-    params.require(:pantry_item).permit(:ingredient_id, :quantity, :fraction, :unit)
+    params.require(:pantry_item).permit(:ingredient_name, :quantity, :fraction, :unit)
   end
 
   def convert_to_quantity_and_fraction(decimal)
