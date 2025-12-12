@@ -1,6 +1,4 @@
 class PantryItemsController < ApplicationController
-  include FractionConverter
-
   before_action :set_pantry_item, only: %i[destroy increment decrement]
 
   def index
@@ -26,18 +24,9 @@ class PantryItemsController < ApplicationController
   end
 
   def increment
-    current_quantity = @pantry_item.available_quantity
-    new_quantity_total = current_quantity + 1.0
-    new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
+    result = PantryItems::UpdateQuantity.call(@pantry_item, :increment)
 
-    # If quantity becomes 0, we need to handle it differently
-    # For increment, we should always have a quantity > 0
-    if new_quantity.nil? && new_fraction.nil?
-      new_quantity = 1.0
-      new_fraction = nil
-    end
-
-    if @pantry_item.update(quantity: new_quantity, fraction: new_fraction)
+    if result.success?
       redirect_to pantry_items_path, notice: t(".success")
     else
       redirect_to pantry_items_path, alert: t(".error")
@@ -45,18 +34,9 @@ class PantryItemsController < ApplicationController
   end
 
   def decrement
-    current_quantity = @pantry_item.available_quantity
-    new_quantity_total = [ current_quantity - 1.0, 0.0 ].max
-    new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
+    result = PantryItems::UpdateQuantity.call(@pantry_item, :decrement)
 
-    # If quantity becomes 0, set both to nil (base ingredient)
-    if new_quantity.nil? && new_fraction.nil?
-      if @pantry_item.update(quantity: nil, fraction: nil)
-        redirect_to pantry_items_path, notice: t(".success")
-      else
-        redirect_to pantry_items_path, alert: t(".error")
-      end
-    elsif @pantry_item.update(quantity: new_quantity, fraction: new_fraction)
+    if result.success?
       redirect_to pantry_items_path, notice: t(".success")
     else
       redirect_to pantry_items_path, alert: t(".error")
@@ -71,31 +51,5 @@ class PantryItemsController < ApplicationController
 
   def pantry_item_params
     params.require(:pantry_item).permit(:ingredient_name, :quantity, :fraction, :unit)
-  end
-
-  def convert_to_quantity_and_fraction(decimal)
-    return [ 0.0, nil ] if decimal.zero?
-
-    whole = decimal.to_i
-    decimal_part = decimal - whole
-
-    return [ whole, nil ] if decimal_part.zero?
-
-    # Try to convert decimal part to common fractions
-    fraction = convert_decimal_to_fraction(decimal_part)
-    return [ whole, fraction ] if fraction
-
-    # If no common fraction matches, store as decimal in quantity
-    [ decimal, nil ]
-  end
-
-  def convert_decimal_to_fraction(decimal)
-    COMMON_FRACTIONS.each do |target_decimal, fraction|
-      if (decimal - target_decimal).abs < 0.01
-        return fraction
-      end
-    end
-
-    nil
   end
 end
