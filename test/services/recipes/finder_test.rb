@@ -29,7 +29,7 @@ module Recipes
       RecipeIngredient.create!(recipe: @recipe3, ingredient: @garlic, original_text: "2 cloves garlic")
     end
 
-    test "returns recipes sorted by matched_count DESC then missing_count ASC" do
+    test "returns fully makeable recipes first, then by share of matched ingredients" do
       # User has pasta and eggs in pantry
       PantryItem.create!(user: @user, ingredient: @pasta, quantity: 500.0, unit: "g")
       PantryItem.create!(user: @user, ingredient: @eggs, quantity: 6.0, unit: "pcs")
@@ -210,6 +210,63 @@ module Recipes
       PantryItem.create!(user: @user, ingredient: @eggs, quantity: 6, unit: "pcs")
 
       assert_queries_count(4) { Finder.call(@user) }
+    end
+
+    # Ranking by share of matched ingredients
+
+    # Creates a recipe with `total` ingredients, the first `matched` of them in the user's pantry
+    def recipe_with(matched:, total:)
+      recipe = Recipe.create!(title: "#{matched}/#{total}")
+      total.times do |i|
+        ingredient = Ingredient.create!(name: "Ingredient #{recipe.id}-#{i}", canonical_name: "ingredient-#{recipe.id}-#{i}")
+        RecipeIngredient.create!(recipe: recipe, ingredient: ingredient, original_text: ingredient.name)
+        PantryItem.create!(user: @user, ingredient: ingredient) if i < matched
+      end
+      recipe
+    end
+
+    def ranked_ids
+      Finder.call(@user).map(&:id)
+    end
+
+    test "ranks a higher share of matched ingredients before a higher matched count" do
+      six_of_twelve = recipe_with(matched: 6, total: 12)
+      three_of_four = recipe_with(matched: 3, total: 4)
+
+      assert_operator ranked_ids.index(three_of_four.id), :<, ranked_ids.index(six_of_twelve.id)
+    end
+
+    test "ranks fully makeable recipes first" do
+      nine_of_ten = recipe_with(matched: 9, total: 10)
+      four_of_four = recipe_with(matched: 4, total: 4)
+
+      assert_operator ranked_ids.index(four_of_four.id), :<, ranked_ids.index(nine_of_ten.id)
+    end
+
+    test "ranks fewer missing ingredients first when the share is equal" do
+      six_of_eight = recipe_with(matched: 6, total: 8)
+      three_of_four = recipe_with(matched: 3, total: 4)
+
+      assert_operator ranked_ids.index(three_of_four.id), :<, ranked_ids.index(six_of_eight.id)
+    end
+
+    test "ranks by recipe id when share and missing count are equal" do
+      first = recipe_with(matched: 1, total: 2)
+      second = recipe_with(matched: 1, total: 2)
+
+      assert_operator ranked_ids.index(first.id), :<, ranked_ids.index(second.id)
+    end
+
+    test "orders recipes by share of matched ingredients, then fewer missing" do
+      six_of_twelve = recipe_with(matched: 6, total: 12)
+      six_of_eight = recipe_with(matched: 6, total: 8)
+      three_of_four = recipe_with(matched: 3, total: 4)
+      nine_of_ten = recipe_with(matched: 9, total: 10)
+      four_of_four = recipe_with(matched: 4, total: 4)
+
+      expected = [ four_of_four, nine_of_ten, three_of_four, six_of_eight, six_of_twelve ].map(&:id)
+
+      assert_equal expected, ranked_ids.first(5)
     end
   end
 end
