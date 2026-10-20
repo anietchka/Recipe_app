@@ -176,16 +176,14 @@ class RecipeTest < ActiveSupport::TestCase
     # Verify that pantry items without quantity are not modified
     salt_item.reload
     assert_nil salt_item.quantity
-    assert_nil salt_item.fraction
     assert_nil salt_item.unit
 
     oil_item.reload
     assert_nil oil_item.quantity
-    assert_nil oil_item.fraction
     assert_nil oil_item.unit
   end
 
-  test "cook! uses symbolic unit when recipe_ingredient quantity is nil" do
+  test "cook! does not decrement pantry item when recipe_ingredient quantity is nil" do
     user = User.create!(email: "demo@example.com")
     salt = Ingredient.create!(name: "Salt", canonical_name: "salt")
 
@@ -206,64 +204,10 @@ class RecipeTest < ActiveSupport::TestCase
     recipe.cook!(user)
 
     salt_item = PantryItem.find_by(user: user, ingredient: salt)
-    assert_equal 9.0, salt_item.quantity
+    assert_equal 10.0, salt_item.quantity
   end
 
-  test "cook! decrements fraction from quantity" do
-    user = User.create!(email: "demo@example.com")
-    flour = Ingredient.create!(name: "Flour", canonical_name: "flour")
-
-    recipe = Recipe.create!(title: "Cake Recipe")
-    RecipeIngredient.create!(
-      recipe: recipe,
-      ingredient: flour,
-      quantity: 1.0,
-      fraction: "1/2",
-      original_text: "1 ½ cups flour"
-    )
-
-    PantryItem.create!(
-      user: user,
-      ingredient: flour,
-      quantity: 5.0
-    )
-
-    recipe.cook!(user)
-
-    flour_item = PantryItem.find_by(user: user, ingredient: flour)
-    assert_equal 3, flour_item.quantity
-    assert_equal "1/2", flour_item.fraction
-  end
-
-  test "cook! decrements fraction from fraction" do
-    user = User.create!(email: "demo@example.com")
-    water = Ingredient.create!(name: "Water", canonical_name: "water")
-
-    recipe = Recipe.create!(title: "Simple Recipe")
-    RecipeIngredient.create!(
-      recipe: recipe,
-      ingredient: water,
-      quantity: nil,
-      fraction: "1/2",
-      original_text: "½ cup water"
-    )
-
-    PantryItem.create!(
-      user: user,
-      ingredient: water,
-      quantity: nil,
-      fraction: "3/4"
-    )
-
-    recipe.cook!(user)
-
-    water_item = PantryItem.find_by(user: user, ingredient: water)
-    # 3/4 - 1/2 = 0.75 - 0.5 = 0.25 = 1/4
-    assert_nil water_item.quantity
-    assert_equal "1/4", water_item.fraction
-  end
-
-  test "cook! decrements quantity with fraction from quantity with fraction" do
+  test "cook! decrements a decimal quantity" do
     user = User.create!(email: "demo@example.com")
     sugar = Ingredient.create!(name: "Sugar", canonical_name: "sugar")
 
@@ -271,27 +215,24 @@ class RecipeTest < ActiveSupport::TestCase
     RecipeIngredient.create!(
       recipe: recipe,
       ingredient: sugar,
-      quantity: 2.0,
-      fraction: "1/4",
+      quantity: 2.25,
       original_text: "2 ¼ cups sugar"
     )
 
     PantryItem.create!(
       user: user,
       ingredient: sugar,
-      quantity: 5.0,
-      fraction: "1/2"
+      quantity: 5.5
     )
 
     recipe.cook!(user)
 
     sugar_item = PantryItem.find_by(user: user, ingredient: sugar)
     # 5.5 - 2.25 = 3.25
-    assert_equal 3.0, sugar_item.quantity
-    assert_equal "1/4", sugar_item.fraction
+    assert_equal 3.25, sugar_item.quantity
   end
 
-  test "cook! removes pantry item when fraction reaches zero" do
+  test "cook! removes pantry item when quantity reaches zero or below" do
     user = User.create!(email: "demo@example.com")
     oil = Ingredient.create!(name: "Oil", canonical_name: "oil")
 
@@ -299,24 +240,20 @@ class RecipeTest < ActiveSupport::TestCase
     RecipeIngredient.create!(
       recipe: recipe,
       ingredient: oil,
-      quantity: 1.0,
-      fraction: "1/3",
-      original_text: "1 ⅓ tablespoons oil"
+      quantity: 1.5,
+      original_text: "1 ½ tablespoons oil"
     )
 
     PantryItem.create!(
       user: user,
       ingredient: oil,
-      quantity: nil,
-      fraction: "2/3"
+      quantity: 0.5
     )
 
     recipe.cook!(user)
 
-    # 2/3 - 1 1/3 = 0.666... - 1.333... = -0.666... -> 0 (ne peut pas être négatif)
-    # When quantity becomes 0, pantry item should be deleted
-    oil_item = PantryItem.find_by(user: user, ingredient: oil)
-    assert_nil oil_item
+    # 0.5 - 1.5 < 0: the stock is exhausted, so the pantry item is deleted
+    assert_nil PantryItem.find_by(user: user, ingredient: oil)
   end
 
   test "missing_ingredients_for returns ingredients not in user pantry with full quantity" do
@@ -340,7 +277,6 @@ class RecipeTest < ActiveSupport::TestCase
     cheese_missing = missing.find { |m| m[:ingredient_id] == cheese.id }
     assert_not_nil cheese_missing
     assert_equal 100.0, cheese_missing[:missing_quantity]
-    assert_nil cheese_missing[:missing_fraction]
   end
 
   test "missing_ingredients_for calculates missing quantity when insufficient in pantry" do
@@ -359,35 +295,9 @@ class RecipeTest < ActiveSupport::TestCase
     pasta_missing = missing.find { |m| m[:ingredient_id] == pasta.id }
     assert_not_nil pasta_missing
     assert_equal 300.0, pasta_missing[:missing_quantity]
-    assert_nil pasta_missing[:missing_fraction]
   end
 
-  test "missing_ingredients_for handles fractions correctly" do
-    user = User.create!(email: "demo@example.com")
-    flour = Ingredient.create!(name: "Flour", canonical_name: "flour")
-
-    recipe = Recipe.create!(title: "Cake")
-    RecipeIngredient.create!(
-      recipe: recipe,
-      ingredient: flour,
-      original_text: "1 ½ cups flour",
-      quantity: 1.0,
-      fraction: "1/2"
-    )
-
-    # User has only 1/2 cup of flour, needs 1 1/2 cups
-    PantryItem.create!(user: user, ingredient: flour, quantity: nil, fraction: "1/2")
-
-    missing = recipe.missing_ingredients_for(user)
-
-    assert_equal 1, missing.count
-    flour_missing = missing.find { |m| m[:ingredient_id] == flour.id }
-    assert_not_nil flour_missing
-    assert_equal 1.0, flour_missing[:missing_quantity]
-    assert_nil flour_missing[:missing_fraction]
-  end
-
-  test "missing_ingredients_for handles complex fraction calculations" do
+  test "missing_ingredients_for handles decimal quantities" do
     user = User.create!(email: "demo@example.com")
     sugar = Ingredient.create!(name: "Sugar", canonical_name: "sugar")
 
@@ -396,21 +306,42 @@ class RecipeTest < ActiveSupport::TestCase
       recipe: recipe,
       ingredient: sugar,
       original_text: "2 ¾ cups sugar",
-      quantity: 2.0,
-      fraction: "3/4"
+      quantity: 2.75
     )
 
-    # User has 1 1/4 cups, needs 2 3/4 cups
-    PantryItem.create!(user: user, ingredient: sugar, quantity: 1.0, fraction: "1/4")
+    # User has 1.25 cups, needs 2.75 cups
+    PantryItem.create!(user: user, ingredient: sugar, quantity: 1.25)
 
     missing = recipe.missing_ingredients_for(user)
 
     assert_equal 1, missing.count
     sugar_missing = missing.find { |m| m[:ingredient_id] == sugar.id }
     assert_not_nil sugar_missing
-    # 2 3/4 - 1 1/4 = 1 1/2
-    assert_equal 1.0, sugar_missing[:missing_quantity]
-    assert_equal "1/2", sugar_missing[:missing_fraction]
+    assert_equal 1.5, sugar_missing[:missing_quantity]
+  end
+
+  test "missing_ingredients_for keeps missing quantity nil when recipe gives no quantity" do
+    user = User.create!(email: "demo@example.com")
+    salt = Ingredient.create!(name: "Salt", canonical_name: "salt")
+
+    recipe = Recipe.create!(title: "Salted Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: salt, original_text: "salt to taste", quantity: nil)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    assert_nil missing.first[:missing_quantity]
+  end
+
+  test "missing_ingredients_for does not include ingredient without recipe quantity when pantry tracks a quantity" do
+    user = User.create!(email: "demo@example.com")
+    salt = Ingredient.create!(name: "Salt", canonical_name: "salt")
+
+    recipe = Recipe.create!(title: "Salted Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: salt, original_text: "salt to taste", quantity: nil)
+    PantryItem.create!(user: user, ingredient: salt, quantity: 500.0, unit: "g")
+
+    assert_empty recipe.missing_ingredients_for(user)
   end
 
   test "missing_ingredients_for does not include ingredient when pantry item exists without quantity" do
@@ -421,7 +352,7 @@ class RecipeTest < ActiveSupport::TestCase
     RecipeIngredient.create!(recipe: recipe, ingredient: salt, original_text: "1 tsp salt", quantity: 1.0, unit: "tsp")
 
     # User has salt in pantry but no quantity specified (base ingredient)
-    PantryItem.create!(user: user, ingredient: salt, quantity: nil, fraction: nil, unit: nil)
+    PantryItem.create!(user: user, ingredient: salt, quantity: nil, unit: nil)
 
     missing = recipe.missing_ingredients_for(user)
 
@@ -465,9 +396,8 @@ class RecipeTest < ActiveSupport::TestCase
     assert_equal 1, missing.count
     pasta_missing = missing.find { |m| m[:ingredient_id] == pasta.id }
     assert_not_nil pasta_missing
-    # 1kg = 1000g, user has 500g, missing 500g = 0.5kg = 1/2 kg
-    assert_nil pasta_missing[:missing_quantity]
-    assert_equal "1/2", pasta_missing[:missing_fraction]
+    # 1kg = 1000g, user has 500g, missing 500g = 0.5kg
+    assert_equal 0.5, pasta_missing[:missing_quantity]
     assert_equal "kg", pasta_missing[:recipe_ingredient].unit
   end
 
@@ -499,9 +429,8 @@ class RecipeTest < ActiveSupport::TestCase
     recipe.cook!(user)
 
     pantry_item.reload
-    # 1kg = 1000g, used 500g, remaining 500g = 0.5kg = 1/2 kg
-    assert_nil pantry_item.quantity
-    assert_equal "1/2", pantry_item.fraction
+    # 1kg = 1000g, used 500g, remaining 500g = 0.5kg
+    assert_equal 0.5, pantry_item.quantity
     assert_equal "kg", pantry_item.unit
   end
 

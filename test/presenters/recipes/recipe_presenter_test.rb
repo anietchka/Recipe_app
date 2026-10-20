@@ -49,7 +49,6 @@ module Recipes
         recipe: @recipe,
         ingredient: @salt,
         quantity: nil,
-        fraction: nil,
         original_text: "salt to taste"
       )
 
@@ -272,16 +271,15 @@ module Recipes
       assert_equal "200.0 g", formatted
     end
 
-    test "format_ingredient_quantity formats quantity with fraction" do
+    test "format_ingredient_quantity formats a decimal quantity" do
       recipe_ingredient = RecipeIngredient.create!(
         recipe: @recipe,
         ingredient: @eggs,
-        quantity: 1.0,
-        fraction: "1/2",
+        quantity: 1.5,
         unit: "cup"
       )
       formatted = @presenter.format_ingredient_quantity(recipe_ingredient)
-      assert_equal "1.0 1/2 cup", formatted
+      assert_equal "1.5 cup", formatted
     end
 
     test "format_ingredient_quantity returns original_text when no quantity" do
@@ -310,21 +308,19 @@ module Recipes
     test "format_missing_quantity formats missing quantity with unit" do
       missing_info = {
         missing_quantity: 100.0,
-        missing_fraction: nil,
         recipe_ingredient: @recipe.recipe_ingredients.find_by(ingredient: @pasta)
       }
       formatted = @presenter.format_missing_quantity(missing_info)
       assert_equal "100.0 g", formatted
     end
 
-    test "format_missing_quantity formats missing quantity with fraction" do
+    test "format_missing_quantity formats a decimal missing quantity" do
       missing_info = {
-        missing_quantity: 1.0,
-        missing_fraction: "1/2",
+        missing_quantity: 1.5,
         recipe_ingredient: @recipe.recipe_ingredients.find_by(ingredient: @eggs)
       }
       formatted = @presenter.format_missing_quantity(missing_info)
-      assert_equal "1.0 1/2 pcs", formatted
+      assert_equal "1.5 pcs", formatted
     end
 
     test "format_missing_quantity handles missing quantity without unit" do
@@ -336,7 +332,6 @@ module Recipes
       )
       missing_info = {
         missing_quantity: nil,
-        missing_fraction: nil,
         recipe_ingredient: recipe_ingredient
       }
       formatted = @presenter.format_missing_quantity(missing_info)

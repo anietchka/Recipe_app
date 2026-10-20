@@ -37,7 +37,7 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_includes pantry_item.errors[:ingredient], I18n.t("errors.messages.blank")
   end
 
-  test "should be valid with only ingredient (no quantity, no fraction, no unit)" do
+  test "should be valid with only ingredient (no quantity, no unit) - untracked quantity" do
     pantry_item = PantryItem.new(
       user: @user,
       ingredient: @ingredient
@@ -65,11 +65,12 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_includes pantry_item.errors[:quantity], I18n.t("errors.messages.greater_than", count: 0)
   end
 
-  test "should be valid with only fraction" do
+  test "should be valid with a fractional decimal quantity" do
     pantry_item = PantryItem.new(
       user: @user,
       ingredient: @ingredient,
-      fraction: "1/2"
+      quantity: 0.5,
+      unit: "kg"
     )
     assert pantry_item.valid?
   end
@@ -79,16 +80,6 @@ class PantryItemTest < ActiveSupport::TestCase
       user: @user,
       ingredient: @ingredient,
       quantity: 500.0
-    )
-    assert pantry_item.valid?
-  end
-
-  test "should be valid with quantity and fraction" do
-    pantry_item = PantryItem.new(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 1.0,
-      fraction: "1/2"
     )
     assert pantry_item.valid?
   end
@@ -176,61 +167,10 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_nil PantryItem.find_by(id: pantry_item.id)
   end
 
-  test "available_quantity returns total quantity when quantity and fraction are present" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 1.0,
-      fraction: "1/2"
-    )
+  test "keeps quantity nil when created without quantity" do
+    pantry_item = PantryItem.create!(user: @user, ingredient: @ingredient)
 
-    # 1 + 0.5 = 1.5
-    assert_equal 1.5, pantry_item.available_quantity
-  end
-
-  test "available_quantity returns quantity when no fraction" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 200.0,
-      fraction: nil
-    )
-
-    assert_equal 200.0, pantry_item.available_quantity
-  end
-
-  test "available_quantity returns fraction value when only fraction is present" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: nil,
-      fraction: "1/2"
-    )
-
-    assert_equal 0.5, pantry_item.available_quantity
-  end
-
-  test "available_quantity returns 0.0 when quantity and fraction are nil" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: nil,
-      fraction: nil
-    )
-
-    assert_equal 0.0, pantry_item.available_quantity
-  end
-
-  test "available_quantity handles complex fractions" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 2.0,
-      fraction: "3/4"
-    )
-
-    # 2 + 0.75 = 2.75
-    assert_equal 2.75, pantry_item.available_quantity
+    assert_nil pantry_item.reload.quantity
   end
 
   test "should accept valid unit from MEASUREMENT_UNITS" do
