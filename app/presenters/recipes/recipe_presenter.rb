@@ -113,9 +113,6 @@ module Recipes
       if recipe_ingredient.quantity.present? && recipe_ingredient.quantity > 0
         parts << recipe_ingredient.quantity.to_s
       end
-      if recipe_ingredient.fraction.present?
-        parts << recipe_ingredient.fraction
-      end
       if recipe_ingredient.unit.present?
         parts << recipe_ingredient.unit
       end
@@ -131,9 +128,6 @@ module Recipes
       if pantry_item.quantity.present? && pantry_item.quantity > 0
         parts << pantry_item.quantity.to_s
       end
-      if pantry_item.fraction.present?
-        parts << pantry_item.fraction
-      end
       if pantry_item.unit.present?
         parts << pantry_item.unit
       end
@@ -145,9 +139,6 @@ module Recipes
       parts = []
       if missing_info[:missing_quantity].present? && missing_info[:missing_quantity] > 0
         parts << missing_info[:missing_quantity].to_s
-      end
-      if missing_info[:missing_fraction].present?
-        parts << missing_info[:missing_fraction]
       end
       # Use the recipe ingredient's unit for the missing quantity
       recipe_ingredient = missing_info[:recipe_ingredient]
