@@ -1,6 +1,5 @@
 module Recipes
   class ImportFromJson
-    include FractionConverter
     include UnitNormalizer
 
     def self.call(file_path = nil)
@@ -71,7 +70,6 @@ module Recipes
       ingredient.save!
 
       quantity = parsed[:quantity]
-      fraction = parsed[:fraction]
       unit     = parsed[:unit]
 
       # When a quantity is present but no unit is specified, we assume a piece count ("pcs").
@@ -82,7 +80,6 @@ module Recipes
         ingredient:    ingredient,
         original_text: ingredient_text,
         quantity:      quantity,
-        fraction:      fraction,
         unit:          unit
       )
     end
@@ -97,11 +94,10 @@ module Recipes
       return parenthetical_result if parenthetical_result.present?
 
       # 2. Fallback to standard "quantity + unit + name" parsing
-      quantity, fraction, unit, name = parse_standard_quantity_unit(text, ingredient_text)
+      quantity, unit, name = parse_standard_quantity_unit(text, ingredient_text)
 
       {
         quantity: quantity,
-        fraction: fraction,
         unit:     unit,
         name:     name
       }
@@ -134,7 +130,7 @@ module Recipes
       unit_token = inner_tokens.find { |t| UnitNormalizer.normalize_unit(t).present? }
       unit = UnitNormalizer.normalize_unit(unit_token) if unit_token
 
-      quantity, fraction = calculate_quantity_and_fraction(number_token, nil)
+      quantity = parse_quantity(number_token, nil)
 
       # Everything after the closing parenthesis is considered the ingredient name
       name_part = text[match.end(0)..].to_s.strip
@@ -144,7 +140,6 @@ module Recipes
 
       {
         quantity: quantity,
-        fraction: fraction,
         unit:     unit,
         name:     name_part
       }
@@ -168,10 +163,9 @@ module Recipes
 
     def parse_standard_quantity_unit(text, ingredient_text)
       tokens = text.split
-      return [ nil, nil, nil, ingredient_text ] if tokens.empty?
+      return [ nil, nil, ingredient_text ] if tokens.empty?
 
       quantity = nil
-      fraction = nil
       unit     = nil
       name_start_index = 0
 
@@ -182,7 +176,7 @@ module Recipes
         number_str = Regexp.last_match(1)
         unit_str   = Regexp.last_match(2)
 
-        quantity, fraction = calculate_quantity_and_fraction(number_str, nil)
+        quantity = parse_quantity(number_str, nil)
         unit = UnitNormalizer.normalize_unit(unit_str)
 
         name_start_index = 1
@@ -207,7 +201,7 @@ module Recipes
           name_start_index  = 1
         end
 
-        quantity, fraction = calculate_quantity_and_fraction(whole_number_text, fraction_text)
+        quantity = parse_quantity(whole_number_text, fraction_text)
 
         # Try to detect a unit token right after quantity/fraction
         if tokens[name_start_index]
@@ -226,65 +220,21 @@ module Recipes
       name = name.split(",").first&.strip if name.present?
       name = ingredient_text.split(",").first&.strip if name.blank?
 
-      [ quantity, fraction, unit, name ]
+      [ quantity, unit, name ]
     end
 
-    # Fraction utilities
-
     # Given an optional whole number and an optional fraction string,
-    # return a numeric quantity and a canonical fraction for display.
+    # return a single numeric quantity, or nil if neither is present.
     #
     # Examples:
-    # - whole="1", fraction=nil      -> quantity=1.0, fraction=nil
-    # - whole=nil, fraction="1/2"    -> quantity=nil, fraction="1/2"
-    # - whole="1", fraction="1/2"    -> quantity=1.0, fraction="1/2"
-    # - whole="1.5", fraction=nil    -> quantity=1.0, fraction="1/2"
-    # - whole="0.25", fraction=nil   -> quantity=nil, fraction="1/4"
-    def calculate_quantity_and_fraction(whole_number_text, fraction_text)
-      whole_number_text = whole_number_text.to_s.strip
-      fraction_text     = fraction_text.to_s.strip
-      whole_number_text = nil if whole_number_text == ""
-      fraction_text     = nil if fraction_text == ""
+    # - whole="1",    fraction=nil   -> 1.0
+    # - whole=nil,    fraction="1/2" -> 0.5
+    # - whole="1",    fraction="1/2" -> 1.5
+    # - whole="0.25", fraction=nil   -> 0.25
+    def parse_quantity(whole_number_text, fraction_text)
+      return nil if whole_number_text.blank? && fraction_text.blank?
 
-      # Fraction only (e.g. "1/2", "1/3")
-      if whole_number_text.nil? && fraction_text.present?
-        return [ nil, fraction_text ]
-      end
-
-      # Whole number only (e.g. "1", "2")
-      if whole_number_text.present? && fraction_text.nil? && !whole_number_text.include?(".")
-        return [ whole_number_text.to_f, nil ]
-      end
-
-      # Combined whole + fraction (e.g. "1" and "1/2")
-      if whole_number_text.present? && fraction_text.present?
-        return [ whole_number_text.to_f, fraction_text ]
-      end
-
-      # Decimal number (e.g. "1.5", "0.25")
-      if whole_number_text&.include?(".")
-        decimal = whole_number_text.to_f
-        whole   = decimal.floor
-        frac    = decimal - whole
-
-        # Use FractionConverter to get a common fraction if possible
-        fraction_str = convert_decimal_to_fraction(frac)
-
-        if fraction_str
-          quantity =
-            if whole.positive?
-              whole.to_f
-            else
-              nil
-            end
-          return [ quantity, fraction_str ]
-        else
-          # Fallback: keep decimal as quantity with no fraction
-          return [ decimal, nil ]
-        end
-      end
-
-      [ nil, nil ]
+      whole_number_text.to_f + (fraction_text.present? ? Rational(fraction_text).to_f : 0)
     end
   end
 end

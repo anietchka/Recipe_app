@@ -50,6 +50,6 @@ class PantryItemsController < ApplicationController
   end
 
   def pantry_item_params
-    params.require(:pantry_item).permit(:ingredient_name, :quantity, :fraction, :unit)
+    params.require(:pantry_item).permit(:ingredient_name, :quantity, :unit)
   end
 end
