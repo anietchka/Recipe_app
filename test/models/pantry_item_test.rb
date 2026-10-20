@@ -259,4 +259,24 @@ class PantryItemTest < ActiveSupport::TestCase
   test "sufficient_for? does not treat a recipe quantity without unit as pcs" do
     assert_not pantry(6, "pcs").sufficient_for?(required(2, nil))
   end
+
+  # quantity_consumed_by (used by Recipes::Cook)
+
+  test "quantity_consumed_by converts the recipe quantity into the pantry unit" do
+    assert_equal 0.5, pantry(1, "kg").quantity_consumed_by(required(500, "g"))
+  end
+
+  test "quantity_consumed_by counts a recipe in pcs against a pantry quantity without unit" do
+    assert_equal 2, pantry(6, nil).quantity_consumed_by(required(2, "pcs"))
+  end
+
+  test "quantity_consumed_by is nil when the recipe gives no quantity" do
+    assert_nil pantry(1, "kg").quantity_consumed_by(required(nil, nil))
+  end
+
+  test "quantity_consumed_by is nil when the units can't be compared" do
+    assert_nil pantry(1000, nil).quantity_consumed_by(required(200, "g"))
+    assert_nil pantry(6, "pcs").quantity_consumed_by(required(2, nil))
+    assert_nil pantry(1, "cup").quantity_consumed_by(required(200, "g"))
+  end
 end

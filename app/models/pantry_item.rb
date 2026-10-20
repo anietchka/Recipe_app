@@ -26,11 +26,23 @@ class PantryItem < ApplicationRecord
 
   # Returns the quantity expressed in the given unit, or nil if the units can't be compared
   def quantity_in(target_unit)
-    return quantity if unit == target_unit
-
-    # A pantry quantity without unit is a count (e.g. "6 eggs" vs recipe "2 pcs")
-    return quantity if unit.nil? && target_unit == "pcs"
+    return quantity if same_unit_as?(target_unit)
 
     convert_quantity(quantity, unit, target_unit)
+  end
+
+  # How much of this item a recipe ingredient consumes, expressed in this item's unit.
+  # nil when the recipe gives no quantity or the units can't be compared.
+  def quantity_consumed_by(recipe_ingredient)
+    return recipe_ingredient.quantity if same_unit_as?(recipe_ingredient.unit)
+
+    convert_quantity(recipe_ingredient.quantity, recipe_ingredient.unit, unit)
+  end
+
+  private
+
+  # Same unit, or a pantry quantity without unit counted against "pcs" (e.g. "6 eggs" vs recipe "2 pcs")
+  def same_unit_as?(other_unit)
+    unit == other_unit || (unit.nil? && other_unit == "pcs")
   end
 end

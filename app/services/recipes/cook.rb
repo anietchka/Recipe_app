@@ -1,7 +1,5 @@
 module Recipes
   class Cook
-    include UnitConverter
-
     def self.call(recipe, user)
       new(recipe, user).call
     end
@@ -12,9 +10,13 @@ module Recipes
       @errors = {}
     end
 
+    # Pantry updates and the CookedRecipe are written atomically:
+    # if any write fails, every pantry change is rolled back.
     def call
-      decrement_pantry_items
-      create_or_update_cooked_recipe
+      ActiveRecord::Base.transaction do
+        decrement_pantry_items
+        create_or_update_cooked_recipe
+      end
       build_success_result
     rescue ActiveRecord::RecordInvalid, ActiveRecord::RecordNotDestroyed => e
       build_error_result(e)
@@ -42,41 +44,21 @@ module Recipes
       # The user has the ingredient, but we don't know the exact stock.
       return if pantry_item.quantity.nil?
 
-      # Skip recipe ingredients without quantity (e.g. "salt to taste")
-      return if recipe_ingredient.quantity.nil?
+      # Skip when the recipe gives no quantity (e.g. "salt to taste")
+      # or when the units can't be compared (never invent a conversion)
+      consumed = pantry_item.quantity_consumed_by(recipe_ingredient)
+      return unless consumed
 
-      # Convert required quantity to pantry item's unit
-      required_in_pantry_unit = convert_quantity_to_pantry_unit(
-        recipe_ingredient.quantity,
-        recipe_ingredient.unit,
-        pantry_item.unit
-      )
-
-      return unless required_in_pantry_unit
-
-      new_quantity = pantry_item.quantity - required_in_pantry_unit
-
-      update_or_destroy_pantry_item(pantry_item, new_quantity)
+      update_or_destroy_pantry_item(pantry_item, pantry_item.quantity - consumed)
     end
 
     def update_or_destroy_pantry_item(pantry_item, new_quantity)
-      # If quantity reaches zero, delete the pantry item instead of keeping it with nil quantity
+      # Exhausted (or insufficient) stock: remove the item rather than storing zero or a negative quantity
       if new_quantity <= 0
         pantry_item.destroy!
       else
         pantry_item.update!(quantity: new_quantity)
       end
-    end
-
-    def convert_quantity_to_pantry_unit(quantity, from_unit, to_unit)
-      return quantity if from_unit == to_unit
-      return quantity if from_unit.nil? || to_unit.nil?
-
-      converted = convert_quantity(quantity, from_unit, to_unit)
-      return converted if converted
-
-      # If conversion fails, return nil to indicate incompatibility
-      nil
     end
 
     def create_or_update_cooked_recipe
