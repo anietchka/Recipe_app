@@ -68,10 +68,6 @@ COPY --chown=rails:rails --from=build /rails /rails
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Expose port (Puma will read PORT from environment, defaults to 8080)
-# See config/puma.rb for port configuration
-EXPOSE 8080
-
-# Start server via Rails server (Puma)
-# Puma reads PORT from ENV
-CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
+# Start server via Thruster by default, this can be overwritten at runtime
+EXPOSE 80
+CMD ["./bin/thrust", "./bin/rails", "server"]
