@@ -83,22 +83,21 @@ module PantryItems
       end
     end
 
-    test "handles fraction in params" do
-      params = @params.merge(quantity: 1.0, fraction: "1/2")
+    test "stores a fractional quantity as a decimal" do
+      params = @params.merge(quantity: "1.5", unit: "kg")
 
       result = PantryItems::Create.call(@user, params)
 
       assert result.success?
-      assert_equal "1/2", result.pantry_item.fraction
+      assert_equal 1.5, result.pantry_item.quantity
     end
 
-    test "creates pantry item without quantity, fraction, or unit" do
+    test "creates pantry item without quantity or unit" do
       salt = Ingredient.create!(name: "Salt", canonical_name: "salt")
 
       params = {
         ingredient_name: "Salt",
         quantity: "",
-        fraction: "",
         unit: ""
       }
 
@@ -108,15 +107,13 @@ module PantryItems
       pantry_item = result.pantry_item
       assert_equal salt, pantry_item.ingredient
       assert_nil pantry_item.quantity
-      assert_nil pantry_item.fraction
       assert_nil pantry_item.unit
     end
 
-    test "ignores unit when quantity and fraction are both empty" do
+    test "ignores unit when quantity is empty" do
       params = {
         ingredient_name: "Salt",
         quantity: "",
-        fraction: "",
         unit: "g"
       }
 
@@ -125,8 +122,7 @@ module PantryItems
       assert result.success?
       pantry_item = result.pantry_item
       assert_nil pantry_item.quantity
-      assert_nil pantry_item.fraction
-      assert_nil pantry_item.unit, "Unit should be nil when quantity and fraction are empty"
+      assert_nil pantry_item.unit, "Unit should be nil when quantity is empty"
     end
 
     test "keeps unit when quantity is present" do
@@ -136,20 +132,6 @@ module PantryItems
 
       assert result.success?
       assert_equal "g", result.pantry_item.unit
-    end
-
-    test "keeps unit when fraction is present" do
-      params = {
-        ingredient_name: "Flour",
-        quantity: "",
-        fraction: "1/2",
-        unit: "cup"
-      }
-
-      result = PantryItems::Create.call(@user, params)
-
-      assert result.success?
-      assert_equal "cup", result.pantry_item.unit
     end
   end
 end

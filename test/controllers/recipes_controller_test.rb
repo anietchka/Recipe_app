@@ -76,8 +76,8 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
     pasta_item = @user.pantry_items.find_by(ingredient: @pasta)
     eggs_item = @user.pantry_items.find_by(ingredient: @eggs)
 
-    initial_pasta_quantity = pasta_item.available_quantity
-    initial_eggs_quantity = eggs_item.available_quantity
+    initial_pasta_quantity = pasta_item.quantity
+    initial_eggs_quantity = eggs_item.quantity
 
     post cook_recipe_url(@recipe)
 
@@ -88,15 +88,15 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
     eggs_item.reload
 
     # Pasta: 500g - 200g = 300g
-    assert_equal 300.0, pasta_item.available_quantity
+    assert_equal 300.0, pasta_item.quantity
     # Eggs: 6 - 2 = 4
-    assert_equal 4.0, eggs_item.available_quantity
+    assert_equal 4.0, eggs_item.quantity
   end
 
   test "cook should remove pantry item when quantity reaches zero" do
     # Reduce pasta to less than required
     pasta_item = @user.pantry_items.find_by(ingredient: @pasta)
-    pasta_item.update!(quantity: 100.0, fraction: nil)
+    pasta_item.update!(quantity: 100.0)
 
     post cook_recipe_url(@recipe)
 
