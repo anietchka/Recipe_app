@@ -15,117 +15,56 @@ module Recipes
       @filters = filters
     end
 
-    # Main entry point:
-    # returns a list of Recipe records, each enriched with calculated attributes via SQL:
-    # - total_ingredients_count (automatically mapped from SQL AS alias)
-    # - matched_ingredients_count (automatically mapped from SQL AS alias)
-    # - missing_ingredients_count (automatically mapped from SQL AS alias)
+    # Returns a page of Recipe records ranked for the user's pantry, each with
+    # total_ingredients_count, matched_ingredients_count and missing_ingredients_count set.
     #
-    # PERFORMANCE NOTE:
-    # This implementation uses a highly optimized single SQL query to join recipes,
-    # ingredients and user pantry items. It computes scores (matched/missing counts)
-    # directly in the database using aggregation (GROUP BY).
+    # An ingredient is matched when PantryItem#sufficient_for? says so, which is the
+    # same rule the recipe detail uses (Recipe#missing_ingredients_for).
     #
-    # This ensures O(1) memory usage in Ruby regardless of the number of recipes,
-    # avoiding the N+1 query problem typical of simple ActiveRecord iterations.
-    # It scales well to thousands of recipes.
+    # Ranking: more matched ingredients first, then fewer missing, then recipe id.
     #
-    # ActiveRecord automatically maps SQL AS aliases to attributes on the model.
-    # The Recipe model provides methods that convert these to integers.
+    # Runs a fixed number of queries; only recipe ingredients present in the pantry are
+    # loaded, the others are counted in the database.
     def call
-      sql, bindings = sql_query_with_bindings
-      rows = Recipe.find_by_sql([ sql ] + bindings)
+      pantry_items = user.pantry_items.index_by(&:ingredient_id)
+      recipes = filtered_recipes
 
-      # ActiveRecord automatically maps SQL AS aliases to attributes
-      # The Recipe model handles conversion to integers via read_attribute
-      # All counts (total, matched, missing) are calculated in a single SQL query
-      # This avoids N+1 queries and is highly performant
-      rows
+      total_counts = RecipeIngredient.where(recipe: recipes).group(:recipe_id).count
+      matched_counts = RecipeIngredient
+        .where(recipe: recipes, ingredient_id: pantry_items.keys)
+        .select do |recipe_ingredient|
+          pantry_item = pantry_items[recipe_ingredient.ingredient_id]
+          pantry_item.sufficient_for?(recipe_ingredient)
+        end
+        .map(&:recipe_id)
+        .tally
+
+      ranked_ids = total_counts.keys.sort_by do |id|
+        matched = matched_counts.fetch(id, 0)
+        [ -matched, total_counts[id] - matched, id ]
+      end
+      page_ids = ranked_ids.drop(offset).first(limit)
+
+      recipes_by_id = Recipe.where(id: page_ids).index_by(&:id)
+      page_ids.map do |id|
+        recipes_by_id[id].tap do |recipe|
+          recipe.total_ingredients_count = total_counts[id]
+          recipe.matched_ingredients_count = matched_counts.fetch(id, 0)
+          recipe.missing_ingredients_count = recipe.total_ingredients_count - recipe.matched_ingredients_count
+        end
+      end
     end
 
     private
 
     attr_reader :user, :limit, :offset, :filters
 
-    # Single SQL query that:
-    # - starts from recipes
-    # - joins all recipe_ingredients for each recipe
-    # - LEFT JOINs the current user's pantry_items on ingredient_id
-    # - applies optional filters on ratings, prep_time, and cook_time
-    #
-    # Because both RecipeIngredient and PantryItem reference Ingredient records
-    # that were created using Ingredient.canonicalize, matching on ingredient_id
-    # effectively means "match on canonical_name".
-    #
-    # For each recipe we compute:
-    # - total_ingredients_count: how many ingredients the recipe needs
-    # - matched_ingredients_count: how many of those are present in the user's pantry
-    # - missing_ingredients_count: total - matched
-    #
-    # Then we order:
-    # - recipes with more matches first (best fit),
-    # - for equal matches, fewer missing ingredients first,
-    # - finally by recipe id for stable ordering.
-    def sql_query_with_bindings
-      where_conditions = []
-      bindings = [ user.id ]
-
-      # Apply filters if present
-      if filters[:min_rating].present?
-        where_conditions << "recipes.ratings >= ?"
-        bindings << filters[:min_rating]
-      end
-
-      if filters[:max_prep_time].present?
-        where_conditions << "recipes.prep_time <= ?"
-        bindings << filters[:max_prep_time]
-      end
-
-      if filters[:max_cook_time].present?
-        where_conditions << "recipes.cook_time <= ?"
-        bindings << filters[:max_cook_time]
-      end
-
-      where_clause = where_conditions.any? ? "WHERE #{where_conditions.join(' AND ')}" : ""
-
-      sql = <<~SQL
-        SELECT
-          recipes.*,
-          COUNT(DISTINCT ri_all.id) AS total_ingredients_count,
-          COUNT(
-            DISTINCT
-            CASE
-              WHEN pi.id IS NOT NULL THEN ri_all.id
-              ELSE NULL
-            END
-          ) AS matched_ingredients_count,
-          COUNT(DISTINCT ri_all.id)
-            - COUNT(
-                DISTINCT
-                CASE
-                  WHEN pi.id IS NOT NULL THEN ri_all.id
-                  ELSE NULL
-                END
-              ) AS missing_ingredients_count
-        FROM recipes
-        JOIN recipe_ingredients AS ri_all
-          ON ri_all.recipe_id = recipes.id
-        LEFT JOIN pantry_items AS pi
-          ON pi.ingredient_id = ri_all.ingredient_id
-         AND pi.user_id = ?
-        #{where_clause}
-        GROUP BY recipes.id
-        ORDER BY
-          matched_ingredients_count DESC,
-          missing_ingredients_count ASC,
-          recipes.id ASC
-        LIMIT ? OFFSET ?
-      SQL
-
-      bindings << limit
-      bindings << offset
-
-      [ sql, bindings ]
+    def filtered_recipes
+      recipes = Recipe.all
+      recipes = recipes.where("ratings >= ?", filters[:min_rating]) if filters[:min_rating].present?
+      recipes = recipes.where("prep_time <= ?", filters[:max_prep_time]) if filters[:max_prep_time].present?
+      recipes = recipes.where("cook_time <= ?", filters[:max_cook_time]) if filters[:max_cook_time].present?
+      recipes
     end
   end
 end

@@ -8,15 +8,9 @@
   </div>
 
   <div class="pantry-card-quantity-section">
-    <% if pantry_item.quantity.present? || pantry_item.fraction.present? %>
+    <% if pantry_item.quantity.present? %>
       <div class="pantry-card-quantity-display">
-        <% if pantry_item.quantity.present? && pantry_item.quantity > 0 %>
-          <span class="quantity-value-large"><%= pantry_item.quantity %></span>
-        <% end %>
-
-        <% if pantry_item.fraction.present? %>
-          <span class="fraction-value-large"><%= pantry_item.fraction %></span>
-        <% end %>
+        <span class="quantity-value-large"><%= pantry_item.quantity %></span>
 
         <% if pantry_item.unit.present? %>
           <span class="unit-value-large"><%= pantry_item.unit %></span>
@@ -29,7 +23,7 @@
     <% end %>
   </div>
 
-  <% if pantry_item.quantity.present? || pantry_item.fraction.present? %>
+  <% if pantry_item.quantity.present? %>
     <div class="pantry-card-actions-bottom">
       <%= button_to decrement_pantry_item_path(pantry_item), method: :patch, class: "quantity-btn quantity-btn-decrement", title: t("pantry_items.index.decrement") do %>
         −

@@ -75,65 +75,26 @@ class RecipeIngredientTest < ActiveSupport::TestCase
     assert_nil recipe_ingredient.quantity
   end
 
-  test "required_quantity returns total quantity when quantity and fraction are present" do
+  test "stores a fractional quantity as a single decimal" do
     recipe_ingredient = RecipeIngredient.create!(
       recipe: @recipe,
       ingredient: @ingredient,
-      original_text: "1 ½ cups flour",
-      quantity: 1.0,
-      fraction: "1/2"
+      original_text: "1 ½ kg flour",
+      quantity: 1.5,
+      unit: "kg"
     )
 
-    # 1 + 0.5 = 1.5
-    assert_equal 1.5, recipe_ingredient.required_quantity
+    assert_equal 1.5, recipe_ingredient.reload.quantity
   end
 
-  test "required_quantity returns quantity when no fraction" do
+  test "does not default a missing quantity to 1" do
     recipe_ingredient = RecipeIngredient.create!(
       recipe: @recipe,
       ingredient: @ingredient,
-      original_text: "200g pasta",
-      quantity: 200.0,
-      fraction: nil
+      original_text: "salt to taste"
     )
 
-    assert_equal 200.0, recipe_ingredient.required_quantity
-  end
-
-  test "required_quantity returns 1.0 when quantity and fraction are both nil or blank" do
-    recipe_ingredient = RecipeIngredient.create!(
-      recipe: @recipe,
-      ingredient: @ingredient,
-      original_text: "some eggs",
-      quantity: nil,
-      fraction: nil
-    )
-
-    assert_equal 1.0, recipe_ingredient.required_quantity
-  end
-
-  test "required_quantity returns fraction value when only fraction is present" do
-    recipe_ingredient = RecipeIngredient.create!(
-      recipe: @recipe,
-      ingredient: @ingredient,
-      original_text: "½ cup water",
-      quantity: nil,
-      fraction: "1/2"
-    )
-
-    assert_equal 0.5, recipe_ingredient.required_quantity
-  end
-
-  test "required_quantity returns 0.0 when quantity is explicitly 0 and fraction is blank" do
-    recipe_ingredient = RecipeIngredient.create!(
-      recipe: @recipe,
-      ingredient: @ingredient,
-      original_text: "some ingredient",
-      quantity: 0.0,
-      fraction: nil
-    )
-
-    assert_equal 0.0, recipe_ingredient.required_quantity
+    assert_nil recipe_ingredient.reload.quantity
   end
 
   test "should accept valid unit from MEASUREMENT_UNITS" do
