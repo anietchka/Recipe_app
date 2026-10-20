@@ -50,16 +50,14 @@ module PantryItems
 
     def build_pantry_item(ingredient)
       quantity = normalize_quantity(params[:quantity])
-      fraction = normalize_fraction(params[:fraction])
       unit = normalize_unit(params[:unit])
 
-      # If no quantity and no fraction, ignore unit (set to nil)
-      unit = nil if quantity.nil? && fraction.blank?
+      # If no quantity, ignore unit (set to nil)
+      unit = nil if quantity.nil?
 
       user.pantry_items.build(
         ingredient: ingredient,
         quantity: quantity,
-        fraction: fraction,
         unit: unit
       )
     end
@@ -70,10 +68,6 @@ module PantryItems
       return nil if value.blank?
 
       value.to_f
-    end
-
-    def normalize_fraction(value)
-      value.presence
     end
 
     def normalize_unit(value)
