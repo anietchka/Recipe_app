@@ -1,6 +1,5 @@
 class PantryItem < ApplicationRecord
   include UnitConverter
-  include QuantityCalculator
 
   belongs_to :user
   belongs_to :ingredient
@@ -11,41 +10,27 @@ class PantryItem < ApplicationRecord
   validates :ingredient_id, uniqueness: { scope: :user_id }
   validates :unit, inclusion: { in: Ingredient::MEASUREMENT_UNITS }, allow_nil: true
 
-  # Returns the total available quantity for this pantry item
-  # Combines quantity and fraction into a single decimal value
-  def available_quantity
-    calculate_total_quantity(quantity, fraction)
+  # Whether this pantry item covers what a recipe ingredient requires
+  def sufficient_for?(recipe_ingredient)
+    # Untracked stock: the user has the ingredient, we don't know how much
+    return true if quantity.nil?
+
+    # Recipe doesn't specify a quantity (e.g. "salt to taste"): having the ingredient is enough
+    return true if recipe_ingredient.quantity.nil?
+
+    available = quantity_in(recipe_ingredient.unit)
+
+    # Units that can't be compared (e.g. g vs ml) are treated as missing
+    available.present? && available >= recipe_ingredient.quantity
   end
 
-  # Check if pantry item has no quantity specified (both quantity and fraction are nil/blank)
-  def without_quantity?
-    quantity.nil? && fraction.blank?
+  # Returns the quantity expressed in the given unit, or nil if the units can't be compared
+  def quantity_in(target_unit)
+    return quantity if unit == target_unit
+
+    # A pantry quantity without unit is a count (e.g. "6 eggs" vs recipe "2 pcs")
+    return quantity if unit.nil? && target_unit == "pcs"
+
+    convert_quantity(quantity, unit, target_unit)
   end
-
-  # Check if this pantry item has insufficient quantity compared to a recipe ingredient requirement
-  def insufficient_quantity?(recipe_ingredient)
-    # If no units specified, compare directly
-    if unit.nil? && recipe_ingredient.unit.nil?
-      return recipe_ingredient.required_quantity > available_quantity
-    end
-
-    # If one has unit and other doesn't, treat as insufficient (can't compare)
-    return true if unit.nil? || recipe_ingredient.unit.nil?
-
-    # If units are incompatible, treat as insufficient
-    return true unless units_compatible?(unit, recipe_ingredient.unit)
-
-    # Convert pantry quantity to recipe unit for comparison
-    available_in_recipe_unit = convert_quantity(
-      available_quantity,
-      unit,
-      recipe_ingredient.unit
-    )
-
-    return true unless available_in_recipe_unit
-
-    recipe_ingredient.required_quantity > available_in_recipe_unit
-  end
-
-  private
 end

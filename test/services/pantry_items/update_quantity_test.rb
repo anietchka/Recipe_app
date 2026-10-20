@@ -17,76 +17,64 @@ module PantryItems
       result = PantryItems::UpdateQuantity.call(@pantry_item, :increment)
 
       assert result.success?
-      @pantry_item.reload
-      assert_equal 6.0, @pantry_item.available_quantity
+      assert_equal 6.0, @pantry_item.reload.quantity
     end
 
     test "decrements quantity by 1" do
       result = PantryItems::UpdateQuantity.call(@pantry_item, :decrement)
 
       assert result.success?
-      @pantry_item.reload
-      assert_equal 4.0, @pantry_item.available_quantity
+      assert_equal 4.0, @pantry_item.reload.quantity
     end
 
-    test "increment converts to fraction when appropriate" do
-      @pantry_item.update!(quantity: 1.0, fraction: "1/2")
+    test "increments a decimal quantity" do
+      @pantry_item.update!(quantity: 1.5)
       result = PantryItems::UpdateQuantity.call(@pantry_item, :increment)
 
       assert result.success?
-      @pantry_item.reload
-      assert_equal 2.5, @pantry_item.available_quantity
+      assert_equal 2.5, @pantry_item.reload.quantity
     end
 
-    test "decrement converts to fraction when appropriate" do
-      @pantry_item.update!(quantity: 2.0, fraction: "1/2")
+    test "decrements a decimal quantity" do
+      @pantry_item.update!(quantity: 1.5)
       result = PantryItems::UpdateQuantity.call(@pantry_item, :decrement)
 
       assert result.success?
-      @pantry_item.reload
-      assert_equal 1.5, @pantry_item.available_quantity
+      assert_equal 0.5, @pantry_item.reload.quantity
     end
 
-    test "decrement sets to nil when quantity becomes 0" do
-      @pantry_item.update!(quantity: 0.5, fraction: nil)
+    test "decrement removes the pantry item when quantity reaches zero" do
+      @pantry_item.update!(quantity: 1.0)
       result = PantryItems::UpdateQuantity.call(@pantry_item, :decrement)
 
       assert result.success?
-      @pantry_item.reload
-      assert_nil @pantry_item.quantity
-      assert_nil @pantry_item.fraction
+      assert_not PantryItem.exists?(@pantry_item.id)
     end
 
-    test "decrement does not go below 0" do
-      @pantry_item.update!(quantity: 0.5, fraction: nil)
+    test "decrement removes the pantry item when quantity goes below zero" do
+      @pantry_item.update!(quantity: 0.5)
       result = PantryItems::UpdateQuantity.call(@pantry_item, :decrement)
 
       assert result.success?
-      @pantry_item.reload
-      assert_nil @pantry_item.quantity
-      assert_nil @pantry_item.fraction
+      assert_not PantryItem.exists?(@pantry_item.id)
     end
 
     # Note: These tests document behavior when service is called directly
     # (e.g., from API or console), even though UI prevents these calls
-    test "increment handles pantry item without quantity" do
-      @pantry_item.update!(quantity: nil, fraction: nil)
+    test "increment keeps an untracked pantry item untracked" do
+      @pantry_item.update!(quantity: nil, unit: nil)
       result = PantryItems::UpdateQuantity.call(@pantry_item, :increment)
 
       assert result.success?
-      @pantry_item.reload
-      assert_equal 1.0, @pantry_item.available_quantity
-      assert_nil @pantry_item.fraction
+      assert_nil @pantry_item.reload.quantity
     end
 
-    test "decrement handles pantry item without quantity" do
-      @pantry_item.update!(quantity: nil, fraction: nil)
+    test "decrement keeps an untracked pantry item untracked" do
+      @pantry_item.update!(quantity: nil, unit: nil)
       result = PantryItems::UpdateQuantity.call(@pantry_item, :decrement)
 
       assert result.success?
-      @pantry_item.reload
-      assert_nil @pantry_item.quantity
-      assert_nil @pantry_item.fraction
+      assert_nil @pantry_item.reload.quantity
     end
 
     test "returns error if update fails validation" do
