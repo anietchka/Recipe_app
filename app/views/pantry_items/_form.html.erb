@@ -63,10 +63,6 @@
             <%= form.number_field :quantity, step: :any, min: 0, placeholder: t("pantry_items.index.quantity_placeholder") %>
           </div>
 
-          <div class="field field-fraction">
-            <%= form.select :fraction, options_for_select(@pantry_items_presenter.common_fractions.map { |f| [f, f] }, @pantry_items_presenter.pantry_item.fraction), { include_blank: t("pantry_items.index.no_fraction") } %>
-          </div>
-
           <div class="field field-third">
             <%= form.select :unit, options_for_select(Ingredient::MEASUREMENT_UNITS.map { |u| [u, u] }, @pantry_items_presenter.pantry_item.unit), { include_blank: t("pantry_items.index.no_unit") } %>
           </div>

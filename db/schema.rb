@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_04_124939) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_20_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -34,9 +34,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_04_124939) do
 
   create_table "pantry_items", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.string "fraction"
     t.bigint "ingredient_id", null: false
-    t.float "quantity"
+    t.decimal "quantity", precision: 10, scale: 3
     t.string "unit"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
@@ -47,10 +46,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_12_04_124939) do
 
   create_table "recipe_ingredients", force: :cascade do |t|
     t.datetime "created_at", null: false
-    t.string "fraction"
     t.bigint "ingredient_id", null: false
     t.text "original_text"
-    t.float "quantity"
+    t.decimal "quantity", precision: 10, scale: 3
     t.bigint "recipe_id", null: false
     t.string "unit"
     t.datetime "updated_at", null: false

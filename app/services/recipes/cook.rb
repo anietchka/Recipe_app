@@ -1,6 +1,5 @@
 module Recipes
   class Cook
-    include FractionConverter
     include UnitConverter
 
     def self.call(recipe, user)
@@ -39,32 +38,33 @@ module Recipes
 
       return unless pantry_item
 
-      # Skip pantry items without quantity (base ingredients like salt, oil, etc.)
-      # These are considered "infinite" and should not be decremented
-      return if pantry_item.quantity.nil? && pantry_item.fraction.blank?
+      # Skip pantry items with untracked quantities.
+      # The user has the ingredient, but we don't know the exact stock.
+      return if pantry_item.quantity.nil?
+
+      # Skip recipe ingredients without quantity (e.g. "salt to taste")
+      return if recipe_ingredient.quantity.nil?
 
       # Convert required quantity to pantry item's unit
       required_in_pantry_unit = convert_quantity_to_pantry_unit(
-        recipe_ingredient.required_quantity,
+        recipe_ingredient.quantity,
         recipe_ingredient.unit,
         pantry_item.unit
       )
 
       return unless required_in_pantry_unit
 
-      current_quantity = pantry_item.available_quantity
-      new_quantity_total = [ current_quantity - required_in_pantry_unit, 0.0 ].max
-      new_quantity, new_fraction = convert_to_quantity_and_fraction(new_quantity_total)
+      new_quantity = pantry_item.quantity - required_in_pantry_unit
 
-      update_or_destroy_pantry_item(pantry_item, new_quantity, new_fraction)
+      update_or_destroy_pantry_item(pantry_item, new_quantity)
     end
 
-    def update_or_destroy_pantry_item(pantry_item, new_quantity, new_fraction)
+    def update_or_destroy_pantry_item(pantry_item, new_quantity)
       # If quantity reaches zero, delete the pantry item instead of keeping it with nil quantity
-      if new_quantity.nil? && new_fraction.nil?
+      if new_quantity <= 0
         pantry_item.destroy!
       else
-        pantry_item.update!(quantity: new_quantity, fraction: new_fraction)
+        pantry_item.update!(quantity: new_quantity)
       end
     end
 
@@ -77,28 +77,6 @@ module Recipes
 
       # If conversion fails, return nil to indicate incompatibility
       nil
-    end
-
-    def convert_to_quantity_and_fraction(decimal)
-      return [ nil, nil ] if decimal.zero?
-
-      whole = decimal.to_i
-      decimal_part = decimal - whole
-
-      # If we have a decimal part, try to convert it to a fraction
-      if decimal_part > 0
-        fraction = convert_decimal_to_fraction(decimal_part)
-        if fraction
-          # If whole is 0, return [nil, fraction], otherwise [whole, fraction]
-          return whole.zero? ? [ nil, fraction ] : [ whole, fraction ]
-        end
-      end
-
-      # If no fraction or whole is not zero, return whole as quantity
-      return [ whole, nil ] if whole > 0
-
-      # If decimal is between 0 and 1 and no common fraction matches, store as decimal
-      [ decimal, nil ]
     end
 
     def create_or_update_cooked_recipe
