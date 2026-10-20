@@ -205,4 +205,58 @@ class PantryItemTest < ActiveSupport::TestCase
     )
     assert pantry_item.valid?
   end
+
+  # sufficient_for? (matching rule shared by Recipes::Finder and the recipe detail)
+
+  def pantry(quantity, unit)
+    PantryItem.new(user: @user, ingredient: @ingredient, quantity: quantity, unit: unit)
+  end
+
+  def required(quantity, unit)
+    RecipeIngredient.new(ingredient: @ingredient, quantity: quantity, unit: unit)
+  end
+
+  test "sufficient_for? is true when the pantry quantity is untracked" do
+    assert pantry(nil, nil).sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? is true when the recipe gives no quantity" do
+    assert pantry(1, "g").sufficient_for?(required(nil, nil))
+  end
+
+  test "sufficient_for? compares quantities in the same unit" do
+    assert pantry(500, "g").sufficient_for?(required(500, "g"))
+    assert_not pantry(300, "g").sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? converts compatible weight units" do
+    assert pantry(1, "kg").sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? converts compatible volume units" do
+    assert pantry(1, "l").sufficient_for?(required(500, "ml"))
+  end
+
+  test "sufficient_for? is false for weight vs volume units" do
+    assert_not pantry(1000, "g").sufficient_for?(required(500, "ml"))
+    assert_not pantry(1000, "g").sufficient_for?(required(1, "cup"))
+  end
+
+  test "sufficient_for? treats a pantry quantity without unit as a count for a recipe in pcs" do
+    assert pantry(6, nil).sufficient_for?(required(2, "pcs"))
+    assert_not pantry(1, nil).sufficient_for?(required(2, "pcs"))
+  end
+
+  test "sufficient_for? compares numbers directly when both units are blank" do
+    assert pantry(3, nil).sufficient_for?(required(2, nil))
+    assert_not pantry(1, nil).sufficient_for?(required(2, nil))
+  end
+
+  test "sufficient_for? is false for a pantry quantity without unit vs a recipe with a measured unit" do
+    assert_not pantry(1000, nil).sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? does not treat a recipe quantity without unit as pcs" do
+    assert_not pantry(6, "pcs").sufficient_for?(required(2, nil))
+  end
 end

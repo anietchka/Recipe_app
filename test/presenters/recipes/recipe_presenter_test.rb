@@ -139,8 +139,7 @@ module Recipes
 
     test "total_ingredients_count uses precalculated value when available" do
       # When recipe is loaded via Finder, it has a precalculated total_ingredients_count
-      # Simulate this by setting the attribute directly
-      @recipe.instance_variable_set(:@total_ingredients_count, 10)
+      @recipe.total_ingredients_count = 10
       assert_equal 10, @presenter.total_ingredients_count
     end
 
@@ -164,8 +163,7 @@ module Recipes
     end
 
     test "missing_count uses precalculated value when available" do
-      @recipe.instance_variable_set(:@attributes, @recipe.attributes.merge("missing_ingredients_count" => 2))
-      @recipe.instance_variable_set(:@missing_ingredients_count, nil) # Reset cache
+      @recipe.missing_ingredients_count = 2
       assert_equal 2, @presenter.missing_count
     end
 
@@ -180,8 +178,7 @@ module Recipes
     end
 
     test "matched_ingredients uses precalculated value when available" do
-      @recipe.instance_variable_set(:@attributes, @recipe.attributes.merge("matched_ingredients_count" => 3))
-      @recipe.instance_variable_set(:@matched_ingredients_count, nil) # Reset cache
+      @recipe.matched_ingredients_count = 3
       assert_equal 3, @presenter.matched_ingredients
     end
 

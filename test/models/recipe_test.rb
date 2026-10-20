@@ -536,4 +536,34 @@ class RecipeTest < ActiveSupport::TestCase
     assert cooked_recipe.cooked_at > old_time
     assert cooked_recipe.cooked_at <= Time.current
   end
+
+  test "missing_ingredients_for treats incompatible units as missing" do
+    user = User.create!(email: "demo@example.com")
+    milk = Ingredient.create!(name: "Milk", canonical_name: "milk")
+
+    recipe = Recipe.create!(title: "Cake")
+    RecipeIngredient.create!(recipe: recipe, ingredient: milk, original_text: "1 cup milk", quantity: 1.0, unit: "cup")
+
+    # Weight can't be compared with volume
+    PantryItem.create!(user: user, ingredient: milk, quantity: 500.0, unit: "g")
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    assert_equal 1.0, missing.first[:missing_quantity]
+  end
+
+  test "missing_ingredients_for treats a pantry quantity without unit as missing for a measured recipe unit" do
+    user = User.create!(email: "demo@example.com")
+    pasta = Ingredient.create!(name: "Pasta", canonical_name: "pasta")
+
+    recipe = Recipe.create!(title: "Pasta Dish")
+    RecipeIngredient.create!(recipe: recipe, ingredient: pasta, original_text: "200g pasta", quantity: 200.0, unit: "g")
+    PantryItem.create!(user: user, ingredient: pasta, quantity: 500.0, unit: nil)
+
+    missing = recipe.missing_ingredients_for(user)
+
+    assert_equal 1, missing.count
+    assert_equal 200.0, missing.first[:missing_quantity]
+  end
 end
