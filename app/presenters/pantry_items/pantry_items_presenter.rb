@@ -1,7 +1,5 @@
 module PantryItems
   class PantryItemsPresenter
-    include FractionConverter
-
     attr_reader :user, :pantry_item
 
     def initialize(user, pantry_item: nil)
@@ -11,10 +9,6 @@ module PantryItems
 
     def pantry_items
       @pantry_items ||= user.pantry_items.includes(:ingredient).order(created_at: :desc)
-    end
-
-    def common_fractions
-      @common_fractions ||= FractionConverter::COMMON_FRACTIONS.values.sort
     end
 
     def empty?

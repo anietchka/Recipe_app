@@ -14,7 +14,7 @@ A Ruby on Rails application that helps users find the most relevant recipes base
 
 ## 🎯 Features
 
-- **Pantry Management** : Manage your ingredients with quantities, fractions, and units
+- **Pantry Management** : Manage your ingredients with quantities and units
 - **Recipe Search** : Find recipes based on your available ingredients
 - **Filters** : Filter recipes by minimum rating, prep time, and cook time
 - **History** : View your cooking history
@@ -53,7 +53,6 @@ This project was developed using **Cursor** (an AI-powered code editor) for:
 - **HTML/ERB templates** - Initial view structure (subsequently refactored to use presenters to keep Ruby logic out of views)
 - **SQL queries** - Complex SQL query construction for recipe matching and ingredient counting
 - **Regex patterns** - Complex pattern matching for ingredient parsing
-- **Fraction handling** - Mathematical operations and conversions for fractional quantities
 - **Test dictation** - Writing test cases following TDD practices
 - **Tab completion** - Code suggestions and autocompletion during development
 - **Commit messages** - Writing clear and descriptive commit messages

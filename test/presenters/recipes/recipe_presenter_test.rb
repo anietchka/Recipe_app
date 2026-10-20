@@ -49,7 +49,6 @@ module Recipes
         recipe: @recipe,
         ingredient: @salt,
         quantity: nil,
-        fraction: nil,
         original_text: "salt to taste"
       )
 
@@ -140,8 +139,7 @@ module Recipes
 
     test "total_ingredients_count uses precalculated value when available" do
       # When recipe is loaded via Finder, it has a precalculated total_ingredients_count
-      # Simulate this by setting the attribute directly
-      @recipe.instance_variable_set(:@total_ingredients_count, 10)
+      @recipe.total_ingredients_count = 10
       assert_equal 10, @presenter.total_ingredients_count
     end
 
@@ -165,8 +163,7 @@ module Recipes
     end
 
     test "missing_count uses precalculated value when available" do
-      @recipe.instance_variable_set(:@attributes, @recipe.attributes.merge("missing_ingredients_count" => 2))
-      @recipe.instance_variable_set(:@missing_ingredients_count, nil) # Reset cache
+      @recipe.missing_ingredients_count = 2
       assert_equal 2, @presenter.missing_count
     end
 
@@ -181,8 +178,7 @@ module Recipes
     end
 
     test "matched_ingredients uses precalculated value when available" do
-      @recipe.instance_variable_set(:@attributes, @recipe.attributes.merge("matched_ingredients_count" => 3))
-      @recipe.instance_variable_set(:@matched_ingredients_count, nil) # Reset cache
+      @recipe.matched_ingredients_count = 3
       assert_equal 3, @presenter.matched_ingredients
     end
 
@@ -272,16 +268,15 @@ module Recipes
       assert_equal "200.0 g", formatted
     end
 
-    test "format_ingredient_quantity formats quantity with fraction" do
+    test "format_ingredient_quantity formats a decimal quantity" do
       recipe_ingredient = RecipeIngredient.create!(
         recipe: @recipe,
         ingredient: @eggs,
-        quantity: 1.0,
-        fraction: "1/2",
+        quantity: 1.5,
         unit: "cup"
       )
       formatted = @presenter.format_ingredient_quantity(recipe_ingredient)
-      assert_equal "1.0 1/2 cup", formatted
+      assert_equal "1.5 cup", formatted
     end
 
     test "format_ingredient_quantity returns original_text when no quantity" do
@@ -310,21 +305,19 @@ module Recipes
     test "format_missing_quantity formats missing quantity with unit" do
       missing_info = {
         missing_quantity: 100.0,
-        missing_fraction: nil,
         recipe_ingredient: @recipe.recipe_ingredients.find_by(ingredient: @pasta)
       }
       formatted = @presenter.format_missing_quantity(missing_info)
       assert_equal "100.0 g", formatted
     end
 
-    test "format_missing_quantity formats missing quantity with fraction" do
+    test "format_missing_quantity formats a decimal missing quantity" do
       missing_info = {
-        missing_quantity: 1.0,
-        missing_fraction: "1/2",
+        missing_quantity: 1.5,
         recipe_ingredient: @recipe.recipe_ingredients.find_by(ingredient: @eggs)
       }
       formatted = @presenter.format_missing_quantity(missing_info)
-      assert_equal "1.0 1/2 pcs", formatted
+      assert_equal "1.5 pcs", formatted
     end
 
     test "format_missing_quantity handles missing quantity without unit" do
@@ -336,7 +329,6 @@ module Recipes
       )
       missing_info = {
         missing_quantity: nil,
-        missing_fraction: nil,
         recipe_ingredient: recipe_ingredient
       }
       formatted = @presenter.format_missing_quantity(missing_info)
