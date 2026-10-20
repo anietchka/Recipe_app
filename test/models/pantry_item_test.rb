@@ -37,7 +37,7 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_includes pantry_item.errors[:ingredient], I18n.t("errors.messages.blank")
   end
 
-  test "should be valid with only ingredient (no quantity, no fraction, no unit)" do
+  test "should be valid with only ingredient (no quantity, no unit) - untracked quantity" do
     pantry_item = PantryItem.new(
       user: @user,
       ingredient: @ingredient
@@ -65,11 +65,12 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_includes pantry_item.errors[:quantity], I18n.t("errors.messages.greater_than", count: 0)
   end
 
-  test "should be valid with only fraction" do
+  test "should be valid with a fractional decimal quantity" do
     pantry_item = PantryItem.new(
       user: @user,
       ingredient: @ingredient,
-      fraction: "1/2"
+      quantity: 0.5,
+      unit: "kg"
     )
     assert pantry_item.valid?
   end
@@ -79,16 +80,6 @@ class PantryItemTest < ActiveSupport::TestCase
       user: @user,
       ingredient: @ingredient,
       quantity: 500.0
-    )
-    assert pantry_item.valid?
-  end
-
-  test "should be valid with quantity and fraction" do
-    pantry_item = PantryItem.new(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 1.0,
-      fraction: "1/2"
     )
     assert pantry_item.valid?
   end
@@ -176,61 +167,10 @@ class PantryItemTest < ActiveSupport::TestCase
     assert_nil PantryItem.find_by(id: pantry_item.id)
   end
 
-  test "available_quantity returns total quantity when quantity and fraction are present" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 1.0,
-      fraction: "1/2"
-    )
+  test "keeps quantity nil when created without quantity" do
+    pantry_item = PantryItem.create!(user: @user, ingredient: @ingredient)
 
-    # 1 + 0.5 = 1.5
-    assert_equal 1.5, pantry_item.available_quantity
-  end
-
-  test "available_quantity returns quantity when no fraction" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 200.0,
-      fraction: nil
-    )
-
-    assert_equal 200.0, pantry_item.available_quantity
-  end
-
-  test "available_quantity returns fraction value when only fraction is present" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: nil,
-      fraction: "1/2"
-    )
-
-    assert_equal 0.5, pantry_item.available_quantity
-  end
-
-  test "available_quantity returns 0.0 when quantity and fraction are nil" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: nil,
-      fraction: nil
-    )
-
-    assert_equal 0.0, pantry_item.available_quantity
-  end
-
-  test "available_quantity handles complex fractions" do
-    pantry_item = PantryItem.create!(
-      user: @user,
-      ingredient: @ingredient,
-      quantity: 2.0,
-      fraction: "3/4"
-    )
-
-    # 2 + 0.75 = 2.75
-    assert_equal 2.75, pantry_item.available_quantity
+    assert_nil pantry_item.reload.quantity
   end
 
   test "should accept valid unit from MEASUREMENT_UNITS" do
@@ -264,5 +204,59 @@ class PantryItemTest < ActiveSupport::TestCase
       unit: nil
     )
     assert pantry_item.valid?
+  end
+
+  # sufficient_for? (matching rule shared by Recipes::Finder and the recipe detail)
+
+  def pantry(quantity, unit)
+    PantryItem.new(user: @user, ingredient: @ingredient, quantity: quantity, unit: unit)
+  end
+
+  def required(quantity, unit)
+    RecipeIngredient.new(ingredient: @ingredient, quantity: quantity, unit: unit)
+  end
+
+  test "sufficient_for? is true when the pantry quantity is untracked" do
+    assert pantry(nil, nil).sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? is true when the recipe gives no quantity" do
+    assert pantry(1, "g").sufficient_for?(required(nil, nil))
+  end
+
+  test "sufficient_for? compares quantities in the same unit" do
+    assert pantry(500, "g").sufficient_for?(required(500, "g"))
+    assert_not pantry(300, "g").sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? converts compatible weight units" do
+    assert pantry(1, "kg").sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? converts compatible volume units" do
+    assert pantry(1, "l").sufficient_for?(required(500, "ml"))
+  end
+
+  test "sufficient_for? is false for weight vs volume units" do
+    assert_not pantry(1000, "g").sufficient_for?(required(500, "ml"))
+    assert_not pantry(1000, "g").sufficient_for?(required(1, "cup"))
+  end
+
+  test "sufficient_for? treats a pantry quantity without unit as a count for a recipe in pcs" do
+    assert pantry(6, nil).sufficient_for?(required(2, "pcs"))
+    assert_not pantry(1, nil).sufficient_for?(required(2, "pcs"))
+  end
+
+  test "sufficient_for? compares numbers directly when both units are blank" do
+    assert pantry(3, nil).sufficient_for?(required(2, nil))
+    assert_not pantry(1, nil).sufficient_for?(required(2, nil))
+  end
+
+  test "sufficient_for? is false for a pantry quantity without unit vs a recipe with a measured unit" do
+    assert_not pantry(1000, nil).sufficient_for?(required(500, "g"))
+  end
+
+  test "sufficient_for? does not treat a recipe quantity without unit as pcs" do
+    assert_not pantry(6, "pcs").sufficient_for?(required(2, nil))
   end
 end
