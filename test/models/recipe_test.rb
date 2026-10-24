@@ -566,4 +566,18 @@ class RecipeTest < ActiveSupport::TestCase
     assert_equal 1, missing.count
     assert_equal 200.0, missing.first[:missing_quantity]
   end
+
+  test "missing_ingredients_for loads pantry items with a single query" do
+    user = User.create!(email: "demo@example.com")
+    recipe = Recipe.create!(title: "Four Ingredients")
+    %w[pasta egg cheese salt].each_with_index do |name, i|
+      ingredient = Ingredient.create!(name: name.capitalize, canonical_name: name)
+      RecipeIngredient.create!(recipe: recipe, ingredient: ingredient, original_text: name, quantity: 100, unit: "g")
+      PantryItem.create!(user: user, ingredient: ingredient, quantity: 50 * i + 50, unit: "g") if i < 3
+    end
+
+    assert_queries_match(/FROM "pantry_items"/, count: 1) do
+      recipe.missing_ingredients_for(user)
+    end
+  end
 end

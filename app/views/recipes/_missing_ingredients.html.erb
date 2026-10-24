@@ -11,8 +11,7 @@
   <ul class="recipe-show-ingredients-list recipe-show-ingredients-list--shopping">
     <% if @recipe_presenter.missing_ingredients.any? %>
       <% @recipe_presenter.missing_ingredients.each do |missing_info| %>
-        <% recipe_ingredient = missing_info[:recipe_ingredient]
-           pantry_item = PantryItem.find_by(user: current_user, ingredient: recipe_ingredient.ingredient) %>
+        <% recipe_ingredient = missing_info[:recipe_ingredient] %>
 
         <li class="recipe-show-ingredient-item recipe-show-ingredient-item--missing">
           <input

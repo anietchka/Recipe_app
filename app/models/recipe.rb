@@ -13,10 +13,15 @@ class Recipe < ApplicationRecord
   #   - ingredient_id: the ingredient ID
   #   - recipe_ingredient: the RecipeIngredient object
   #   - missing_quantity: the missing quantity (numeric, or nil if the recipe gives no quantity)
-  def missing_ingredients_for(user)
+  def missing_ingredients_for(user, pantry_items = pantry_items_for(user))
     recipe_ingredients.includes(:ingredient).filter_map do |recipe_ingredient|
-      calculate_missing_for_ingredient(recipe_ingredient, user)
+      calculate_missing_for_ingredient(recipe_ingredient, pantry_items[recipe_ingredient.ingredient_id])
     end
+  end
+
+  # The user's pantry items for this recipe's ingredients, indexed by ingredient_id (one query)
+  def pantry_items_for(user)
+    user.pantry_items.where(ingredient_id: recipe_ingredients.select(:ingredient_id)).index_by(&:ingredient_id)
   end
 
   # Decrements pantry items for the given user based on recipe ingredients
@@ -31,9 +36,7 @@ class Recipe < ApplicationRecord
 
   private
 
-  def calculate_missing_for_ingredient(recipe_ingredient, user)
-    pantry_item = PantryItem.find_by(user: user, ingredient: recipe_ingredient.ingredient)
-
+  def calculate_missing_for_ingredient(recipe_ingredient, pantry_item)
     return build_missing_hash(recipe_ingredient, recipe_ingredient.quantity) if pantry_item.nil?
     return if pantry_item.sufficient_for?(recipe_ingredient)
 

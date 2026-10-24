@@ -262,6 +262,18 @@ module Recipes
       assert_not_nil salt_item[:pantry_item]
     end
 
+    test "loads pantry items with a single query for both ingredient lists" do
+      PantryItem.create!(user: @user, ingredient: @pasta, quantity: 500.0, unit: "g")
+      PantryItem.create!(user: @user, ingredient: @eggs, quantity: 1.0, unit: "pcs")
+      PantryItem.create!(user: @user, ingredient: @salt)
+      presenter = RecipePresenter.new(@recipe, @user)
+
+      assert_queries_match(/FROM "pantry_items"/, count: 1) do
+        presenter.missing_ingredients
+        presenter.available_ingredients
+      end
+    end
+
     test "format_ingredient_quantity formats quantity with unit" do
       recipe_ingredient = @recipe.recipe_ingredients.find_by(ingredient: @pasta)
       formatted = @presenter.format_ingredient_quantity(recipe_ingredient)

@@ -50,6 +50,13 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "show loads pantry items with a single query" do
+    assert_queries_match(/FROM "pantry_items"/, count: 1) do
+      get recipe_url(@recipe)
+    end
+    assert_response :success
+  end
+
   test "show should display recipe details" do
     get recipe_url(@recipe)
     assert_response :success

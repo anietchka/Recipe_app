@@ -9,7 +9,7 @@ module Recipes
     end
 
     def missing_ingredients
-      @missing_ingredients ||= recipe.missing_ingredients_for(user)
+      @missing_ingredients ||= recipe.missing_ingredients_for(user, pantry_items)
     end
 
     # Returns available ingredients with their pantry items
@@ -23,11 +23,9 @@ module Recipes
         recipe_ingredients.filter_map do |recipe_ingredient|
           next if missing_ingredient_ids.include?(recipe_ingredient.ingredient_id)
 
-          pantry_item = PantryItem.find_by(user: user, ingredient: recipe_ingredient.ingredient)
-
           {
             recipe_ingredient: recipe_ingredient,
-            pantry_item: pantry_item
+            pantry_item: pantry_items[recipe_ingredient.ingredient_id]
           }
         end
       end
@@ -146,6 +144,13 @@ module Recipes
         parts << recipe_ingredient.unit
       end
       parts.join(" ")
+    end
+
+    private
+
+    # The user's pantry items for this recipe, loaded once for both ingredient lists
+    def pantry_items
+      @pantry_items ||= recipe.pantry_items_for(user)
     end
   end
 end
