@@ -8,7 +8,7 @@ module PantryItems
     end
 
     def pantry_items
-      @pantry_items ||= user.pantry_items.includes(:ingredient).order(created_at: :desc)
+      @pantry_items ||= user.pantry_items.eager_load(:ingredient).order(Ingredient.arel_table[:name].lower)
     end
 
     def empty?

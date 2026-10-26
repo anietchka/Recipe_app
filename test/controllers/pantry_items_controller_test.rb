@@ -17,6 +17,17 @@ class PantryItemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index lists pantry ingredients alphabetically, ignoring case" do
+    %w[cherry Apple banana].each do |name|
+      ingredient = Ingredient.create!(name: name, canonical_name: name.downcase)
+      PantryItem.create!(user: @user, ingredient: ingredient)
+    end
+
+    get pantry_items_url
+
+    assert_equal %w[Apple banana cherry Pasta], css_select(".pantry-card-title").map { |title| title.text.strip }
+  end
+
   test "should create pantry_item" do
     assert_difference("PantryItem.count") do
       post pantry_items_url, params: {
