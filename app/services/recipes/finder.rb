@@ -15,6 +15,8 @@ module Recipes
       @filters = filters
     end
 
+    attr_reader :total_count
+
     # Returns a page of Recipe records ranked for the user's pantry, each with
     # total_ingredients_count, matched_ingredients_count and missing_ingredients_count set.
     #
@@ -22,7 +24,10 @@ module Recipes
     # same rule the recipe detail uses (Recipe#missing_ingredients_for).
     #
     # Ranking: fewer missing ingredients first (fully makeable recipes on top),
-    # then highest share of matched ingredients, then recipe id.
+    # then more matched ingredients, then recipe id.
+    #
+    # After the call, #total_count holds the number of recipes matching the filters,
+    # before pagination.
     #
     # Runs a fixed number of queries; only recipe ingredients present in the pantry are
     # loaded, the others are counted in the database.
@@ -46,10 +51,9 @@ module Recipes
       candidate_ids = total_counts.keys
       candidate_ids = candidate_ids.select { |id| missing_counts[id] <= filters[:max_missing] } if filters[:max_missing]
 
-      ranked_ids = candidate_ids.sort_by do |id|
-        matched = matched_counts.fetch(id, 0)
-        [ missing_counts[id], -Rational(matched, total_counts[id]), id ]
-      end
+      @total_count = candidate_ids.size
+
+      ranked_ids = candidate_ids.sort_by { |id| [ missing_counts[id], -matched_counts.fetch(id, 0), id ] }
       page_ids = ranked_ids.drop(offset).first(limit)
 
       recipes_by_id = Recipe.where(id: page_ids).index_by(&:id)

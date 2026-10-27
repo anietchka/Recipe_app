@@ -808,6 +808,14 @@ table form .btn {
   line-height: 1.5;
 }
 
+/* Recipes Result Count */
+.recipes-results-count {
+  max-width: 900px;
+  margin: 0 auto 1rem;
+  padding: 0 1rem;
+  color: #666;
+}
+
 /* Recipes Container */
 .recipes-container {
   max-width: 900px;

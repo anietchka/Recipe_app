@@ -131,6 +131,80 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
     assert_equal({ "max_missing" => "any", "max_prep_time" => "30", "page" => "2" }, query)
   end
 
+  # Result count and pagination
+
+  def create_cookable_recipes(count)
+    count.times do |i|
+      recipe = Recipe.create!(title: "Cookable #{i}")
+      RecipeIngredient.create!(recipe: recipe, ingredient: @pasta, original_text: "pasta")
+    end
+  end
+
+  def next_page_link
+    css_select(".pagination a").find { |link| link.text.strip == I18n.t("recipes.index.next_page") }
+  end
+
+  test "index shows the singular result count" do
+    create_cookable_recipes(1)
+
+    get recipes_url
+
+    assert_select ".recipes-results-count", text: "1 recipe matches your criteria"
+  end
+
+  test "index shows the total result count on every page" do
+    create_cookable_recipes(21)
+
+    get recipes_url
+    assert_select ".recipes-results-count", text: "21 recipes match your criteria"
+
+    get recipes_url(page: 2)
+    assert_select ".recipes-results-count", text: "21 recipes match your criteria"
+  end
+
+  test "index result count follows max_missing" do
+    create_cookable_recipes(2)
+
+    get recipes_url
+    assert_select ".recipes-results-count", text: "2 recipes match your criteria"
+
+    get recipes_url(max_missing: "any")
+    assert_select ".recipes-results-count", text: "3 recipes match your criteria" # + @recipe, missing cheese
+  end
+
+  test "index shows no result count when nothing matches" do
+    get recipes_url # the only recipe is missing cheese
+
+    assert_select ".recipes-results-count", count: 0
+    assert_select ".empty-state"
+  end
+
+  test "no next link when the total equals one page" do
+    create_cookable_recipes(20)
+
+    get recipes_url
+
+    assert_equal 20, card_titles.size
+    assert_nil next_page_link
+  end
+
+  test "next link when the total exceeds one page" do
+    create_cookable_recipes(21)
+
+    get recipes_url
+
+    assert_not_nil next_page_link
+  end
+
+  test "no next link on the last page" do
+    create_cookable_recipes(21)
+
+    get recipes_url(page: 2)
+
+    assert_equal 1, card_titles.size
+    assert_nil next_page_link
+  end
+
   test "filter form does not carry the current page" do
     get recipes_url(page: 2, max_missing: "any")
 

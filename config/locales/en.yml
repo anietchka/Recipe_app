@@ -98,6 +98,9 @@ en:
       time: "%{minutes} min"
       ingredients_score: "%{matched} / %{total} ingredients available • %{missing} missing"
       all_ingredients_available: "All %{total} ingredients available"
+      results_count:
+        one: "%{count} recipe matches your criteria"
+        other: "%{count} recipes match your criteria"
       no_recipes: "No recipes match your pantry right now. Try allowing one or two missing ingredients to discover more recipes."
       back_to_pantry: "Back to Pantry"
       previous_page: "Previous"
