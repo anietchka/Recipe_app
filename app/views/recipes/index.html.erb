@@ -37,6 +37,7 @@
 <% end %>
 
 <% if @recipes_presenter.any? %>
+  <p class="recipes-results-count"><%= t(".results_count", count: @recipes_presenter.total_count) %></p>
   <div class="recipes-container">
     <% @recipes_presenter.each do |recipe| %>
       <%= render "recipe_card", recipe: recipe %>

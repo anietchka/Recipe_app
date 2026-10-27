@@ -12,8 +12,9 @@ class RecipesController < ApplicationController
     filters = build_filters
     @max_missing_selection = filters.fetch(:max_missing, "any").to_s
     @pagination_params = filter_params.except(:page)
-    recipes = Recipes::Finder.call(current_user, limit: per_page, offset: offset, filters: filters)
-    @recipes_presenter = Recipes::RecipesPresenter.new(recipes, current_user, page: page, per_page: per_page)
+    finder = Recipes::Finder.new(current_user, limit: per_page, offset: offset, filters: filters)
+    recipes = finder.call
+    @recipes_presenter = Recipes::RecipesPresenter.new(recipes, current_user, page: page, per_page: per_page, total_count: finder.total_count)
   end
 
   def show

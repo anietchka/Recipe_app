@@ -1,12 +1,13 @@
 module Recipes
   class RecipesPresenter
-    attr_reader :recipes, :user, :page, :per_page
+    attr_reader :recipes, :user, :page, :per_page, :total_count
 
-    def initialize(recipes, user, page: 1, per_page: 20)
+    def initialize(recipes, user, page: 1, per_page: 20, total_count: recipes.size)
       @recipes = recipes
       @user = user
       @page = page
       @per_page = per_page
+      @total_count = total_count
     end
 
     def presenters
@@ -18,7 +19,7 @@ module Recipes
     end
 
     def has_more?
-      recipes.count == per_page
+      page * per_page < total_count
     end
 
     def empty?

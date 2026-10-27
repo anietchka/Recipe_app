@@ -29,7 +29,7 @@ module Recipes
       RecipeIngredient.create!(recipe: @recipe3, ingredient: @garlic, original_text: "2 cloves garlic")
     end
 
-    test "returns fully makeable recipes first, then by share of matched ingredients" do
+    test "returns fully makeable recipes first, then by fewer missing ingredients" do
       # User has pasta and eggs in pantry
       PantryItem.create!(user: @user, ingredient: @pasta, quantity: 500.0, unit: "g")
       PantryItem.create!(user: @user, ingredient: @eggs, quantity: 6.0, unit: "pcs")
@@ -212,7 +212,7 @@ module Recipes
       assert_queries_count(4) { Finder.call(@user) }
     end
 
-    # Ranking: fewer missing ingredients, then higher share of matched ingredients, then id
+    # Ranking: fewer missing ingredients, then more matched ingredients, then id
 
     # Creates a recipe with `total` ingredients, the first `matched` of them in the user's pantry
     def recipe_with(matched:, total:)
@@ -229,8 +229,7 @@ module Recipes
       Finder.call(@user).map(&:id)
     end
 
-    test "ranks fewer missing ingredients before a higher share of matched ingredients" do
-      # Regression: percentage-first ranking would put 3/5 (60%) before 1/2 (50%)
+    test "ranks fewer missing ingredients before more matched ingredients" do
       three_of_five = recipe_with(matched: 3, total: 5)
       one_of_two = recipe_with(matched: 1, total: 2)
 
@@ -244,37 +243,39 @@ module Recipes
       assert_operator ranked_ids.index(four_of_four.id), :<, ranked_ids.index(nine_of_ten.id)
     end
 
-    test "ranks fewer missing ingredients first when the share is equal" do
-      six_of_eight = recipe_with(matched: 6, total: 8)
-      three_of_four = recipe_with(matched: 3, total: 4)
-
-      assert_operator ranked_ids.index(three_of_four.id), :<, ranked_ids.index(six_of_eight.id)
-    end
-
-    test "ranks a higher share of matched ingredients first when the missing count is equal" do
+    test "ranks more matched ingredients first when the missing count is equal" do
       three_of_five = recipe_with(matched: 3, total: 5)
       eight_of_ten = recipe_with(matched: 8, total: 10)
 
       assert_operator ranked_ids.index(eight_of_ten.id), :<, ranked_ids.index(three_of_five.id)
     end
 
-    test "ranks by recipe id when missing count and share are equal" do
+    test "ranks more matched ingredients first among fully makeable recipes" do
+      # Regression: a share-based ranking ties at 100% and would fall back to id (2/2 first)
+      two_of_two = recipe_with(matched: 2, total: 2)
+      eight_of_eight = recipe_with(matched: 8, total: 8)
+
+      assert_operator ranked_ids.index(eight_of_eight.id), :<, ranked_ids.index(two_of_two.id)
+    end
+
+    test "ranks by recipe id when missing and matched counts are equal" do
       first = recipe_with(matched: 1, total: 2)
       second = recipe_with(matched: 1, total: 2)
 
       assert_operator ranked_ids.index(first.id), :<, ranked_ids.index(second.id)
     end
 
-    test "orders recipes by fewer missing ingredients, then higher share" do
+    test "orders recipes by fewer missing ingredients, then more matched ingredients" do
       three_of_five = recipe_with(matched: 3, total: 5)
       eight_of_ten = recipe_with(matched: 8, total: 10)
       one_of_two = recipe_with(matched: 1, total: 2)
       three_of_four = recipe_with(matched: 3, total: 4)
-      four_of_four = recipe_with(matched: 4, total: 4)
+      two_of_two = recipe_with(matched: 2, total: 2)
+      eight_of_eight = recipe_with(matched: 8, total: 8)
 
-      expected = [ four_of_four, three_of_four, one_of_two, eight_of_ten, three_of_five ].map(&:id)
+      expected = [ eight_of_eight, two_of_two, three_of_four, one_of_two, eight_of_ten, three_of_five ].map(&:id)
 
-      assert_equal expected, ranked_ids.first(5)
+      assert_equal expected, ranked_ids.first(6)
     end
 
     # Maximum missing ingredients filter
@@ -346,6 +347,39 @@ module Recipes
       recipe_with(matched: 1, total: 4).update!(ratings: 4.5)
 
       assert_equal [ wanted.id ], ids_with(max_missing: 0, min_rating: 4.0)
+    end
+
+    # Total count of matching recipes (before pagination)
+
+    def total_count_for(**options)
+      finder = Finder.new(@user, **options)
+      finder.call
+      finder.total_count
+    end
+
+    test "total_count is the filtered count before pagination" do
+      5.times { recipe_with(matched: 1, total: 1) }
+      2.times { recipe_with(matched: 1, total: 4) }
+
+      assert_equal 5, total_count_for(limit: 2, offset: 0, filters: { max_missing: 0 })
+      assert_equal 5, total_count_for(limit: 2, offset: 4, filters: { max_missing: 0 })
+    end
+
+    test "total_count follows max_missing" do
+      5.times { recipe_with(matched: 1, total: 1) }
+      2.times { recipe_with(matched: 1, total: 4) }
+
+      assert_equal 5, total_count_for(filters: { max_missing: 0 })
+      # + the two 1/4 recipes and the two setup recipes missing 2 ingredients
+      assert_equal 9, total_count_for(filters: { max_missing: 3 })
+    end
+
+    test "total_count reflects the other filters" do
+      recipe_with(matched: 2, total: 2).update!(ratings: 4.5)
+      recipe_with(matched: 2, total: 2).update!(ratings: 3.0)
+
+      assert_equal 2, total_count_for(filters: { max_missing: 0 })
+      assert_equal 1, total_count_for(filters: { max_missing: 0, min_rating: 4.0 })
     end
   end
 end
