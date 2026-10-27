@@ -34,15 +34,107 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "index should display recipes found by Finder service" do
+    PantryItem.create!(user: @user, ingredient: @cheese, quantity: 200.0, unit: "g")
+
     get recipes_url
     assert_response :success
     assert_select ".recipe-card", minimum: 1
   end
 
   test "index should show recipe score information" do
+    PantryItem.create!(user: @user, ingredient: @cheese, quantity: 200.0, unit: "g")
+
     get recipes_url
     assert_response :success
     assert_select ".recipe-card__score"
+  end
+
+  # Maximum missing ingredients filter
+
+  def create_recipe_missing(count, title)
+    recipe = Recipe.create!(title: title)
+    count.times do |i|
+      ingredient = Ingredient.create!(name: "#{title} #{i}", canonical_name: "#{title.parameterize}-#{i}")
+      RecipeIngredient.create!(recipe: recipe, ingredient: ingredient, original_text: ingredient.name)
+    end
+    recipe
+  end
+
+  def card_titles
+    css_select(".recipe-card__title").map { |title| title.text.strip }
+  end
+
+  def selected_max_missing
+    css_select("select[name=max_missing] option[selected]").map { |option| option.text.strip }
+  end
+
+  test "index limits recipes to 0 missing ingredients by default" do
+    complete = Recipe.create!(title: "Plain Pasta")
+    RecipeIngredient.create!(recipe: complete, ingredient: @pasta, original_text: "200g pasta", quantity: 200, unit: "g")
+    create_recipe_missing(3, "Three Missing")
+
+    get recipes_url
+
+    assert_includes card_titles, "Plain Pasta"
+    assert_not_includes card_titles, @recipe.title # 1 missing (cheese)
+    assert_not_includes card_titles, "Three Missing"
+    assert_equal [ "0" ], selected_max_missing
+  end
+
+  test "index explains the empty state without implying an empty pantry" do
+    get recipes_url # the only recipe is missing cheese
+
+    assert_empty card_titles
+    assert_select ".empty-state p", text: I18n.t("recipes.index.no_recipes")
+  end
+
+  test "index with max_missing=any shows every recipe" do
+    create_recipe_missing(3, "Three Missing")
+
+    get recipes_url(max_missing: "any")
+
+    assert_includes card_titles, "Three Missing"
+    assert_equal [ "Any" ], selected_max_missing
+  end
+
+  test "index with max_missing=0 shows only fully makeable recipes" do
+    complete = Recipe.create!(title: "Plain Pasta")
+    RecipeIngredient.create!(recipe: complete, ingredient: @pasta, original_text: "200g pasta", quantity: 200, unit: "g")
+
+    get recipes_url(max_missing: "0")
+
+    assert_equal [ "Plain Pasta" ], card_titles
+    assert_equal [ "0" ], selected_max_missing
+  end
+
+  test "index falls back to the default for an invalid max_missing" do
+    create_recipe_missing(3, "Three Missing")
+
+    get recipes_url(max_missing: "abc")
+
+    assert_response :success
+    assert_not_includes card_titles, @recipe.title # 1 missing (cheese)
+    assert_not_includes card_titles, "Three Missing"
+    assert_equal [ "0" ], selected_max_missing
+  end
+
+  test "pagination links keep the current filters" do
+    21.times do |i|
+      recipe = Recipe.create!(title: "Quick #{i}", prep_time: 10)
+      RecipeIngredient.create!(recipe: recipe, ingredient: @pasta, original_text: "pasta")
+    end
+
+    get recipes_url(max_missing: "any", max_prep_time: "30")
+
+    next_link = css_select(".pagination a").find { |link| link.text.strip == I18n.t("recipes.index.next_page") }
+    query = Rack::Utils.parse_query(URI.parse(next_link["href"]).query)
+    assert_equal({ "max_missing" => "any", "max_prep_time" => "30", "page" => "2" }, query)
+  end
+
+  test "filter form does not carry the current page" do
+    get recipes_url(page: 2, max_missing: "any")
+
+    assert_select "form.recipes-filters input[name=page]", count: 0
   end
 
   test "should get show" do

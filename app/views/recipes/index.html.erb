@@ -20,16 +20,20 @@
     </div>
 
     <div class="field">
+      <%= f.label :max_missing, t(".filters.max_missing") %>
+      <%= f.select :max_missing,
+            options_for_select(RecipesController::MAX_MISSING_OPTIONS.map { |n| [ n, n.to_s ] } + [ [ t(".filters.max_missing_any"), "any" ] ],
+                               @max_missing_selection) %>
+    </div>
+
+    <div class="field">
       <%= f.submit t(".filters.filter_button"), class: "btn" %>
 
-      <% if params[:min_rating].present? || params[:max_prep_time].present? || params[:max_cook_time].present? %>
+      <% if params[:min_rating].present? || params[:max_prep_time].present? || params[:max_cook_time].present? || params[:max_missing].present? %>
         <%= link_to t(".filters.clear"), recipes_path, class: "btn btn-secondary" %>
       <% end %>
     </div>
   </div>
-
-  <%# Preserve page parameter when filtering %>
-  <%= hidden_field_tag :page, params[:page] if params[:page].present? %>
 <% end %>
 
 <% if @recipes_presenter.any? %>
@@ -41,11 +45,11 @@
   <% if @recipes_presenter.page > 1 || @recipes_presenter.has_more? %>
     <div class="pagination">
       <% if @recipes_presenter.page > 1 %>
-        <%= link_to t(".previous_page"), recipes_path(page: @recipes_presenter.page - 1), class: "btn" %>
+        <%= link_to t(".previous_page"), recipes_path(@pagination_params.merge(page: @recipes_presenter.page - 1)), class: "btn" %>
       <% end %>
 
       <% if @recipes_presenter.has_more? %>
-        <%= link_to t(".next_page"), recipes_path(page: @recipes_presenter.page + 1), class: "btn" %>
+        <%= link_to t(".next_page"), recipes_path(@pagination_params.merge(page: @recipes_presenter.page + 1)), class: "btn" %>
       <% end %>
     </div>
   <% end %>

@@ -40,10 +40,15 @@ module Recipes
         .map(&:recipe_id)
         .tally
 
-      ranked_ids = total_counts.keys.sort_by do |id|
+      missing_counts = total_counts.to_h { |id, total| [ id, total - matched_counts.fetch(id, 0) ] }
+
+      # Optional limit on missing ingredients; an absent key means no limit (0 is a real limit)
+      candidate_ids = total_counts.keys
+      candidate_ids = candidate_ids.select { |id| missing_counts[id] <= filters[:max_missing] } if filters[:max_missing]
+
+      ranked_ids = candidate_ids.sort_by do |id|
         matched = matched_counts.fetch(id, 0)
-        missing = total_counts[id] - matched
-        [ -Rational(matched, total_counts[id]), missing, id ]
+        [ -Rational(matched, total_counts[id]), missing_counts[id], id ]
       end
       page_ids = ranked_ids.drop(offset).first(limit)
 
@@ -52,7 +57,7 @@ module Recipes
         recipes_by_id[id].tap do |recipe|
           recipe.total_ingredients_count = total_counts[id]
           recipe.matched_ingredients_count = matched_counts.fetch(id, 0)
-          recipe.missing_ingredients_count = recipe.total_ingredients_count - recipe.matched_ingredients_count
+          recipe.missing_ingredients_count = missing_counts[id]
         end
       end
     end

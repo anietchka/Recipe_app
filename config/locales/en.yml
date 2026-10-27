@@ -98,7 +98,7 @@ en:
       time: "%{minutes} min"
       ingredients_score: "%{matched} / %{total} ingredients available • %{missing} missing"
       all_ingredients_available: "All %{total} ingredients available"
-      no_recipes: "No recipes found. Add some ingredients to your pantry first!"
+      no_recipes: "No recipes match your pantry right now. Try allowing one or two missing ingredients to discover more recipes."
       back_to_pantry: "Back to Pantry"
       previous_page: "Previous"
       next_page: "Next"
@@ -114,6 +114,8 @@ en:
         max_prep_time_placeholder: "e.g. 30"
         max_cook_time: "Max cook time (minutes)"
         max_cook_time_placeholder: "e.g. 60"
+        max_missing: "Maximum missing ingredients"
+        max_missing_any: "Any"
         filter_button: "Filter"
         clear: "Clear"
     show:
