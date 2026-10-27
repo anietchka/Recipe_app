@@ -268,5 +268,76 @@ module Recipes
 
       assert_equal expected, ranked_ids.first(5)
     end
+
+    # Maximum missing ingredients filter
+
+    def ids_with(**filters)
+      Finder.call(@user, limit: 100, filters: filters).map(&:id)
+    end
+
+    test "max_missing 0 keeps only fully makeable recipes" do
+      complete = recipe_with(matched: 4, total: 4)
+      one_missing = recipe_with(matched: 3, total: 4)
+
+      recipes = Finder.call(@user, filters: { max_missing: 0 })
+
+      assert_includes recipes.map(&:id), complete.id
+      assert_not_includes recipes.map(&:id), one_missing.id
+      assert recipes.all? { |recipe| recipe.missing_ingredients_count.zero? }
+    end
+
+    test "max_missing 2 keeps recipes with up to two missing ingredients" do
+      one_missing = recipe_with(matched: 3, total: 4)
+      two_missing = recipe_with(matched: 2, total: 4)
+      three_missing = recipe_with(matched: 1, total: 4)
+
+      ids = ids_with(max_missing: 2)
+
+      assert_includes ids, one_missing.id
+      assert_includes ids, two_missing.id
+      assert_not_includes ids, three_missing.id
+    end
+
+    test "without max_missing every recipe is returned" do
+      complete = recipe_with(matched: 4, total: 4)
+      three_missing = recipe_with(matched: 1, total: 4)
+
+      ids = ids_with
+
+      assert_includes ids, complete.id
+      assert_includes ids, three_missing.id
+      assert_equal Recipe.joins(:recipe_ingredients).distinct.count, ids.size
+    end
+
+    test "max_missing keeps the ranking of the remaining recipes" do
+      recipe_with(matched: 6, total: 12)
+      recipe_with(matched: 6, total: 8)
+      recipe_with(matched: 3, total: 4)
+      recipe_with(matched: 9, total: 10)
+      recipe_with(matched: 4, total: 4)
+
+      filtered = ids_with(max_missing: 2)
+      unfiltered = ids_with
+
+      assert_equal unfiltered & filtered, filtered
+    end
+
+    test "pagination applies after the max_missing filter" do
+      5.times { recipe_with(matched: 1, total: 1) }
+      2.times { recipe_with(matched: 1, total: 4) }
+
+      pages = [ 0, 2, 4 ].map { |offset| Finder.call(@user, limit: 2, offset: offset, filters: { max_missing: 0 }) }
+
+      assert_equal [ 2, 2, 1 ], pages.map(&:size)
+      assert_equal ids_with(max_missing: 0), pages.flatten.map(&:id)
+    end
+
+    test "max_missing combines with existing filters" do
+      wanted = recipe_with(matched: 2, total: 2).tap { |recipe| recipe.update!(ratings: 4.5) }
+      recipe_with(matched: 2, total: 2).update!(ratings: 3.0)
+      recipe_with(matched: 1, total: 4).update!(ratings: 4.5)
+
+      assert_equal [ wanted.id ], ids_with(max_missing: 0, min_rating: 4.0)
+    end
   end
 end
