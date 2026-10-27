@@ -21,8 +21,8 @@ module Recipes
     # An ingredient is matched when PantryItem#sufficient_for? says so, which is the
     # same rule the recipe detail uses (Recipe#missing_ingredients_for).
     #
-    # Ranking: highest share of matched ingredients first (fully makeable recipes on top),
-    # then fewer missing ingredients, then recipe id.
+    # Ranking: fewer missing ingredients first (fully makeable recipes on top),
+    # then highest share of matched ingredients, then recipe id.
     #
     # Runs a fixed number of queries; only recipe ingredients present in the pantry are
     # loaded, the others are counted in the database.
@@ -48,7 +48,7 @@ module Recipes
 
       ranked_ids = candidate_ids.sort_by do |id|
         matched = matched_counts.fetch(id, 0)
-        [ -Rational(matched, total_counts[id]), missing_counts[id], id ]
+        [ missing_counts[id], -Rational(matched, total_counts[id]), id ]
       end
       page_ids = ranked_ids.drop(offset).first(limit)
 
