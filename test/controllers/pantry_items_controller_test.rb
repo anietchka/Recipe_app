@@ -17,6 +17,16 @@ class PantryItemsControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "index header points to Recipes, in singular and plural" do
+    get pantry_items_url
+    assert_select ".pantry-header-text", text: "You have 1 ingredient in your pantry. Go to Recipes to see what you can cook."
+
+    PantryItem.create!(user: @user, ingredient: Ingredient.create!(name: "Rice", canonical_name: "rice"))
+
+    get pantry_items_url
+    assert_select ".pantry-header-text", text: "You have 2 ingredients in your pantry. Go to Recipes to see what you can cook."
+  end
+
   test "index lists pantry ingredients alphabetically, ignoring case" do
     %w[cherry Apple banana].each do |name|
       ingredient = Ingredient.create!(name: name, canonical_name: name.downcase)

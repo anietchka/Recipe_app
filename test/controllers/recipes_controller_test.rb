@@ -205,6 +205,32 @@ class RecipesControllerTest < ActionDispatch::IntegrationTest
     assert_nil next_page_link
   end
 
+  # Turbo hover prefetch: off for links that run the Finder, kept for cheap pages
+
+  test "the Recipes navigation link opts out of Turbo prefetch" do
+    get pantry_items_url
+
+    assert_select "nav.navbar a[href=?][data-turbo-prefetch=false]", recipes_path
+  end
+
+  test "pagination links opt out of Turbo prefetch" do
+    create_cookable_recipes(41)
+
+    get recipes_url(page: 2) # both Previous and Next
+
+    assert_select ".pagination a", count: 2
+    assert_select ".pagination a[data-turbo-prefetch=false]", count: 2
+  end
+
+  test "recipe cards keep Turbo prefetch" do
+    create_cookable_recipes(1)
+
+    get recipes_url
+
+    assert_select "a.recipe-card", count: 1
+    assert_select "a.recipe-card[data-turbo-prefetch]", count: 0
+  end
+
   test "filter form does not carry the current page" do
     get recipes_url(page: 2, max_missing: "any")
 

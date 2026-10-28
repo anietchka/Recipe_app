@@ -30,7 +30,7 @@
       <%= f.submit t(".filters.filter_button"), class: "btn" %>
 
       <% if params[:min_rating].present? || params[:max_prep_time].present? || params[:max_cook_time].present? || params[:max_missing].present? %>
-        <%= link_to t(".filters.clear"), recipes_path, class: "btn btn-secondary" %>
+        <%= link_to t(".filters.clear"), recipes_path, class: "btn btn-secondary", data: { turbo_prefetch: false } %>
       <% end %>
     </div>
   </div>
@@ -46,11 +46,11 @@
   <% if @recipes_presenter.page > 1 || @recipes_presenter.has_more? %>
     <div class="pagination">
       <% if @recipes_presenter.page > 1 %>
-        <%= link_to t(".previous_page"), recipes_path(@pagination_params.merge(page: @recipes_presenter.page - 1)), class: "btn" %>
+        <%= link_to t(".previous_page"), recipes_path(@pagination_params.merge(page: @recipes_presenter.page - 1)), class: "btn", data: { turbo_prefetch: false } %>
       <% end %>
 
       <% if @recipes_presenter.has_more? %>
-        <%= link_to t(".next_page"), recipes_path(@pagination_params.merge(page: @recipes_presenter.page + 1)), class: "btn" %>
+        <%= link_to t(".next_page"), recipes_path(@pagination_params.merge(page: @recipes_presenter.page + 1)), class: "btn", data: { turbo_prefetch: false } %>
       <% end %>
     </div>
   <% end %>
