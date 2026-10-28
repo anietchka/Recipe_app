@@ -2,24 +2,27 @@
 
 A Ruby on Rails application that helps users find recipes based on the ingredients they already have at home.
 
-Users can manage their pantry, discover recipes ranked by how closely they match their available ingredients, see what is missing, cook a recipe, and automatically update their pantry.
+Live demo: https://recipes.bozio.fr
+
+Users can manage their pantry, see first the recipes they can cook right now, allow a few missing ingredients when needed, see what is missing, cook a recipe, and automatically update their pantry.
 
 ## User stories
 
 - As a user, I want to manage the ingredients I have at home so that the application knows what I can cook.
-- As a user, I want to see recipes ranked by how well they match my pantry so that I can quickly decide what to cook.
+- As a user, I want to see first the recipes I can cook right now, and allow a few missing ingredients when needed, so that I can quickly decide what to cook.
 - As a user, I want to see which ingredients are missing from a recipe so that I know what I would need before cooking it.
 
 ## Features
 
 - Manage pantry ingredients with optional quantities and units
-- Find recipes based on available pantry ingredients
-- Rank recipes by pantry coverage
+- Show only recipes you can cook right now by default, then allow up to 1–4 missing ingredients, or any
+- Rank recipes by fewest missing ingredients, then most matched ingredients
+- Show how many recipes match the current pantry and filters
 - See available and missing ingredients for each recipe
 - Filter recipes by rating, preparation time, and cooking time
-- Automatically update pantry quantities when cooking
+- Automatically update tracked pantry quantities when cooking
 - Keep a history of cooked recipes
-- Handle compatible unit conversions
+- Convert compatible units only (e.g. g/kg, ml/l)
 
 ## Technical overview
 
@@ -54,10 +57,10 @@ Open the project and select:
 Dev Containers: Reopen in Container
 ```
 
-Then start the application:
+Then start the application (Rails server and Tailwind CSS watcher):
 
 ```bash
-bin/rails server
+bin/dev
 ```
 
 The application is available at:
@@ -80,7 +83,13 @@ Set up the database:
 bin/rails db:prepare
 ```
 
-The application uses the following demo user:
+Start the application:
+
+```bash
+bin/dev
+```
+
+The application uses the following demo user, created by the database seeds:
 
 ```text
 demo@example.com
@@ -147,5 +156,7 @@ For changes affecting business logic or performance, I also added regression tes
 - Ruby on Rails
 - PostgreSQL
 - Hotwire / Turbo / Stimulus
+- Tailwind CSS
 - Minitest
 - Propshaft
+- Kamal
