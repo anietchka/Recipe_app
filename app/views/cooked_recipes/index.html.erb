@@ -11,6 +11,6 @@
 <% else %>
   <div class="empty-state">
     <p><%= t(".no_cooked_recipes") %></p>
-    <%= link_to t(".find_recipes"), recipes_path, class: "btn" %>
+    <%= link_to t(".find_recipes"), recipes_path, class: "btn", data: { turbo_prefetch: false } %>
   </div>
 <% end %>

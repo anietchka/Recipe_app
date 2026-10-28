@@ -72,8 +72,8 @@ en:
       pantry_summary_one: "You have 1 ingredient in your pantry."
       pantry_summary_other: "You have %{count} ingredients in your pantry."
       pantry_summary_hint: "Click on \"Find Recipes\" to see what you can cook."
-      pantry_header_text: "You have %{count} ingredient in your pantry. Click on 'Find recipes' to see what you can cook."
-      pantry_header_text_other: "You have %{count} ingredients in your pantry. Click on 'Find recipes' to see what you can cook."
+      pantry_header_text: "You have %{count} ingredient in your pantry. Go to Recipes to see what you can cook."
+      pantry_header_text_other: "You have %{count} ingredients in your pantry. Go to Recipes to see what you can cook."
       pantry_staple: "Pantry staple (no quantity tracked)"
     form:
       error: "error"
